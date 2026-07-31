@@ -1,0 +1,59 @@
+name: Disc compatibility report
+description: Tell us about a disc — whether it worked or not. Both are useful.
+title: "[disc] "
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Only a few of the many Ford service titles have
+        been tested, so **successful** reports are just as valuable as failures —
+        they are how the compatibility table gets filled in.
+
+        **Please do not attach disc content**, images, or extracted files.
+        The `fsd probe` output below is all that's needed.
+  - type: input
+    id: disc
+    attributes:
+      label: What is the disc?
+      description: Whatever is printed on it — year, model, and part number if there is one.
+      placeholder: "2020 Mustang Service Information, CD/DVD, part no. ..."
+    validations:
+      required: true
+  - type: textarea
+    id: probe
+    attributes:
+      label: Output of `fsd probe`
+      description: Run `python3 -m fsd probe /path/to/disc` and paste the whole thing.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: What happened?
+      options:
+        - Everything worked — extract and build both fine
+        - Probe was clean but extract or build failed
+        - Probe reported failures
+        - The disc was not recognised at all
+    validations:
+      required: true
+  - type: textarea
+    id: errors
+    attributes:
+      label: Errors, if any
+      description: The full traceback or error output.
+      render: text
+  - type: input
+    id: env
+    attributes:
+      label: OS and Python version
+      placeholder: "macOS 15.4, Python 3.13"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: >
+        If the disc was not recognised, a listing of its top-level folders
+        (`ls /Volumes/YOURDISC`) helps a lot.

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>__TITLE__</title>
+<link rel="stylesheet" href="assets/app.css?v=__V__">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🔧</text></svg>">
+<meta name="theme-color" content="#11161d">
+</head>
+<body>
+<header class="top">
+  <button class="icon-btn nav-toggle" id="navToggle" aria-label="Menu">
+    <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+  </button>
+  <a class="brand" href="#/">
+    <span class="brand-mark">__BRAND_MARK__</span>
+    <span class="brand-name">__BRAND_NAME__<em>__BRAND_SUB__</em></span>
+  </a>
+  <nav class="books" id="bookTabs"></nav>
+  <form class="search" id="searchForm" role="search">
+    <svg class="s-ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Search procedures, DTCs, connectors…" autocomplete="off" spellcheck="false">
+    <kbd>/</kbd>
+  </form>
+</header>
+
+<div class="shell">
+  <aside class="side" id="side"><div class="side-inner" id="sideInner"></div></aside>
+  <div class="side-scrim" id="scrim"></div>
+  <main class="main" id="main"><div class="loading">Loading…</div></main>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <div class="lb-bar">
+    <span id="lbCaption"></span>
+    <span class="lb-tools">
+      <button class="icon-btn" data-z="out" aria-label="Zoom out"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+      <button class="icon-btn" data-z="fit" aria-label="Fit">FIT</button>
+      <button class="icon-btn" data-z="in" aria-label="Zoom in"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="icon-btn" id="lbClose" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </span>
+  </div>
+  <div class="lb-stage" id="lbStage"><img id="lbImg" alt=""></div>
+</div>
+
+<script src="assets/app.js?v=__V__"></script>
+</body>
+</html>

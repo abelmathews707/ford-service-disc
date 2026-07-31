@@ -1,0 +1,53 @@
+# ---------------------------------------------------------------------------
+# This repository contains NO Ford content and must stay that way.
+# Everything a disc produces is ignored here. If you are adding a file and
+# git is fighting you about it, that is this file doing its job — check
+# whether what you are committing came off a disc before you use -f.
+# ---------------------------------------------------------------------------
+
+# Disc images
+*.iso
+*.img
+*.bin
+*.cue
+*.ccd
+*.sub
+*.mds
+*.mdf
+*.nrg
+*.daa
+
+# Ford containers and anything unpacked from them
+*.ARC
+*.arc
+*.epl
+*.ENC
+*.enc
+DATA?.CAB
+DATA?.HDR
+*.CAB
+*.INX
+
+# Build inputs and outputs
+extracted/
+site/
+out/
+build/
+dist/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
