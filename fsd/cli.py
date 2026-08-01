@@ -6,6 +6,7 @@ import sys
 import tempfile
 
 from . import __version__
+from .arc import ArcError
 from .disc import DiscError, open_source
 from .extract import extract as do_extract
 from .iso import IsoError
@@ -79,7 +80,6 @@ def cmd_iso(a):
 def cmd_serve(a):
     import functools
     import http.server
-    import socketserver
     root = os.path.abspath(a.site)
     if not os.path.isdir(root):
         return _err(f'{root}: not a directory')
@@ -88,7 +88,9 @@ def cmd_serve(a):
     handler = functools.partial(http.server.SimpleHTTPRequestHandler,
                                 directory=root)
 
-    class Server(socketserver.TCPServer):
+    # Threaded: a single procedure page can pull hundreds of images, and a
+    # one-request-at-a-time server makes that crawl.
+    class Server(http.server.ThreadingHTTPServer):
         allow_reuse_address = True
         daemon_threads = True
 
@@ -199,7 +201,7 @@ def main(argv=None):
     args = make_parser().parse_args(argv)
     try:
         return args.fn(args)
-    except (DiscError, IsoError) as ex:
+    except (DiscError, IsoError, ArcError) as ex:
         return _err(str(ex))
     except BrokenPipeError:
         return 0

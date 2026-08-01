@@ -132,6 +132,33 @@ pointing at a server-side URL Ford never shipped, references to location
 sheets that were never pressed, and frame-based tables of contents that
 rendered as unstyled duplicate navigation.
 
+## Self-hosting it
+
+The built site is static files, so any web server works — but if you want it
+running permanently on a home server, there is a Compose setup in
+[`docker/`](docker/) that serves it with Caddy (gzip, cache headers, health
+check):
+
+```bash
+cd docker
+cp .env.example .env      # point SITE at your built site
+docker compose up -d
+```
+
+Build the site on your laptop and copy it over, or let the server unpack the
+disc itself — mount the image and run the one-shot builder:
+
+```bash
+docker compose --profile build run --rm build
+```
+
+**The site is always a bind mount, never baked into an image.** An image with
+the content in it would be a copyrighted 600 MB artefact one `docker push`
+away from being published by accident.
+
+`fsd serve` is fine for a quick look, but it is a development server. Use
+Caddy, nginx or Apache for anything permanent.
+
 ## Compatibility
 
 **Tested against one disc so far** — 2020 Mustang (`20SLB`), which carries a

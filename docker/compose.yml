@@ -1,0 +1,50 @@
+# Self-hosting a built site.
+#
+#   cd docker
+#   cp .env.example .env      # point SITE at your built site
+#   docker compose up -d
+#
+# To unpack a disc on the server instead of copying a built site over, set
+# DISC as well and run the one-shot builder:
+#
+#   docker compose --profile build run --rm build
+#
+# The site is a bind mount, never part of an image — see Dockerfile for why.
+
+name: ford-service-disc
+
+services:
+  viewer:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "${BIND:-127.0.0.1}:${PORT:-8848}:80"
+    volumes:
+      - ${SITE:?set SITE to your built site directory}:/srv:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/index.html"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # One-shot: unpack a disc and build the site into SITE, then exit.
+  build:
+    profiles: ["build"]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      # Compose interpolates every service regardless of profile, so DISC
+      # cannot be marked required here without breaking plain `up` for people
+      # who only want to serve. The default is a deliberately obvious path.
+      - ${DISC:-./DISC-NOT-SET-IN-ENV}:/disc:ro
+      - ${SITE:?set SITE to your built site directory}:/out
+    command: ["all", "/disc", "-o", "/out"]
+
+volumes:
+  caddy-data:
+  caddy-config:

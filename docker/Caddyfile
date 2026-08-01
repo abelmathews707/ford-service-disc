@@ -1,0 +1,30 @@
+# Static serving for a built site. The site is plain files with hash-based
+# routing, so there are no rewrites to do — index.html is the only entry point.
+:80 {
+	root * /srv
+	file_server
+
+	# HTML, SVG, CSS, JS and the JSON indexes compress to roughly a third.
+	# JPEGs dominate the total and are already compressed.
+	encode zstd gzip
+
+	# content/ and data/ only change when the site is rebuilt, and app assets
+	# carry a ?v= stamp, so both can be cached hard.
+	@static path /content/* /data/* /assets/*
+	header @static Cache-Control "public, max-age=2592000, immutable"
+
+	# The shell itself must not be cached, or a rebuild goes unnoticed.
+	header /index.html Cache-Control "no-cache"
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	log {
+		output stderr
+		format console
+		level WARN
+	}
+}

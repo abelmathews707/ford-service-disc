@@ -100,6 +100,21 @@ def rmtree(path, attempts=5):
             time.sleep(0.25 * (i + 1))
 
 
+def empty_dir(path):
+    """Delete everything inside `path` while keeping `path` itself.
+
+    The output directory is very often a bind mount — a Docker volume, an NFS
+    share — and removing the mount point fails with EBUSY. Clearing the
+    contents works in both cases.
+    """
+    for name in os.listdir(path):
+        p = os.path.join(path, name)
+        if os.path.isdir(p) and not os.path.islink(p):
+            rmtree(p)
+        else:
+            os.remove(p)
+
+
 def plain(fragment):
     t = re.sub(r'(?s)<[^>]+>', ' ', fragment)
     return ' '.join(html.unescape(t).split())
@@ -498,8 +513,8 @@ def build(src, out, title=None, log=print, clean=True):
                           for r, _, fs in os.walk(VIEWER) for f in fs)))
     title = title or site_title(books, disc_label(src))
 
-    if clean and os.path.exists(out):
-        rmtree(out)
+    if clean and os.path.isdir(out):
+        empty_dir(out)
     for d in (cont, data):
         os.makedirs(d, exist_ok=True)
 
