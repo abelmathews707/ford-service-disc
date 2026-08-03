@@ -1,6 +1,6 @@
 # Offline Android wrapper
 
-A tiny WebView app (~150 lines) that shows a built manual site fully offline
+A tiny WebView app (~200 lines) that shows a built manual site fully offline
 on an Android tablet or phone. No network, no server, no Gradle.
 
 ## Why this exists
@@ -8,11 +8,17 @@ on an Android tablet or phone. No network, no server, no Gradle.
 The viewer is a single-page app that loads its content with `fetch()`. If
 you open `index.html` straight from local storage in a normal browser, the
 browser blocks those requests — `file://` pages are not allowed to fetch
-other local files. This wrapper enables file access in its own WebView and
-points it at a local copy, which sidesteps that entirely.
+other local files. And current Android WebView ignores the legacy "allow
+file access from file URLs" switches, so a plain file:// wrapper just sits
+on the loading screen.
 
-It contains no content and fetches nothing from the network. It is a 13 KB
-shell around whatever you put in `/sdcard/FordManual/`.
+This wrapper instead serves the site from a virtual `http://127.0.0.1`
+origin: every request is intercepted in the WebView and answered by reading
+the matching file from `/sdcard/FordManual/`. Same-origin `fetch()` then
+works exactly as it does on a real server, and nothing touches the network.
+
+It contains no content. It is a ~17 KB shell around whatever you put in
+`/sdcard/FordManual/`.
 
 ## Build
 
@@ -47,6 +53,7 @@ the contents of `site/` to the `FordManual` folder on the device.
 3. Open **Ford Service Manual**. Everything — search, wiring diagrams,
    connector views, PCED — works with no internet connection.
 
-Targets Android 8.0+ (API 26) with `targetSdk 29`, which is what lets the
-WebView read local files; this matches the Android version on the diagnostic
-tablets (XTool D7 class) the wrapper was written for.
+Targets Android 8.0+ (API 26) with `targetSdk 29`; this matches the Android
+version on the diagnostic tablets (XTool D7 class) the wrapper was written
+for. Cleartext HTTP is allowed only for `127.0.0.1`/localhost, and only to
+the local file service — no other traffic is permitted.

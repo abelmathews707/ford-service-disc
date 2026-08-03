@@ -13,6 +13,11 @@
 #
 # The SDK location is taken from $ANDROID_HOME, or inferred from sdkmanager
 # being on PATH.
+#
+# Note: dexing uses dx rather than d8. d8 (in every build-tools release we
+# tried, 29 through 34) crashes with an internal NPE on the class files this
+# wrapper produces under current JDKs; dx handles them fine. dx is deprecated
+# but stable and more than enough for a single-activity app.
 set -eu
 
 cd "$(dirname "$0")"
@@ -35,7 +40,7 @@ fi
 PLATFORM="$SDK/platforms/android-29/android.jar"
 BUILD_TOOLS="$SDK/build-tools/29.0.3"
 AAPT2="$BUILD_TOOLS/aapt2"
-D8="$BUILD_TOOLS/d8"
+DX="$BUILD_TOOLS/dx"
 ZIPALIGN="$BUILD_TOOLS/zipalign"
 APKSIGNER="$BUILD_TOOLS/apksigner"
 
@@ -61,9 +66,8 @@ echo "javac..."
 javac --release 8 -classpath "$PLATFORM" -d "$OUT/classes" \
   src/com/fordservicedisc/viewer/MainActivity.java
 
-echo "d8..."
-"$D8" --lib "$PLATFORM" --release --output "$OUT" \
-  "$OUT/classes/com/fordservicedisc/viewer/"*.class
+echo "dx (dex)..."
+"$DX" --dex --output="$OUT/classes.dex" "$OUT/classes"
 
 echo "package + align + sign..."
 (cd "$OUT" && zip -qj base.apk classes.dex)
