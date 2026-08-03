@@ -54,3 +54,8 @@ Thumbs.db
 
 # Local deployment config (may contain host paths)
 docker/.env
+
+# Android wrapper build output
+viewer/android/build/
+*.apk
+*.keystore

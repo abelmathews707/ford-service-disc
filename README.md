@@ -159,6 +159,18 @@ away from being published by accident.
 `fsd serve` is fine for a quick look, but it is a development server. Use
 Caddy, nginx or Apache for anything permanent.
 
+
+## Offline on a tablet
+
+The built site is static and the viewer talks to no network, so it runs fully
+offline on a phone or tablet. If the device can't serve HTTP itself — a
+diagnostic tablet in the garage, for instance — there is a tiny WebView
+wrapper in [`viewer/android/`](viewer/android/): it points the device's
+WebView at a local copy of the site and switches on the file access the
+fetch-based viewer needs. No Gradle, no content included. Build it with the
+Android SDK command-line tools, copy the built site to
+`/sdcard/FordManual/`, install the APK, done.
+
 ## Compatibility
 
 **Tested against one disc so far** — 2020 Mustang (`20SLB`), which carries a

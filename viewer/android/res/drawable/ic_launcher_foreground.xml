@@ -1,0 +1,7 @@
+<!-- Copyright (c) 2026 Alexander Hill. SPDX-License-Identifier: MIT -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M34,30 h28 a10,10 0 0 1 10,10 v10 h-10 v-8 a2,2 0 0 0 -2,-2 h-24 a2,2 0 0 0 -2,2 v22 a2,2 0 0 0 2,2 h24 a2,2 0 0 0 2,-2 v-8 h10 v10 a10,10 0 0 1 -10,10 h-28 a10,10 0 0 1 -10,-10 v-34 a10,10 0 0 1 10,-10 z" />
+</vector>
