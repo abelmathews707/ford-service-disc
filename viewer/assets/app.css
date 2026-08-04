@@ -20,7 +20,7 @@ a:hover{text-decoration:underline}
 kbd{font:11px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 5px;color:var(--dim)}
 
 /* ---------- header ---------- */
-.top{position:fixed;inset:0 0 auto 0;height:var(--hdr);z-index:40;display:flex;align-items:center;
+.top{position:fixed;top:0;right:0;left:0;height:var(--hdr);z-index:40;display:flex;align-items:center;
   gap:10px;padding:0 12px;background:rgba(14,19,25,.92);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line)}
 .icon-btn{display:grid;place-items:center;min-width:38px;height:38px;padding:0 9px;border:0;border-radius:9px;
@@ -80,7 +80,7 @@ h1.title{font-size:23px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em}
 /* legacy document on light paper: wire colours & photos must stay true */
 .paper{background:var(--paper);color:var(--ink);border-radius:12px;padding:26px 28px;
   box-shadow:0 12px 34px rgba(0,0,0,.45);overflow-x:auto}
-.paper :is(h1,h2,h3){color:#0f1720}
+.paper h1,.paper h2,.paper h3{color:#0f1720}
 .paper a{color:#0b64c8}
 .paper table{border-collapse:collapse;max-width:100%}
 .paper td,.paper th{padding:5px 8px;vertical-align:top}
@@ -119,7 +119,7 @@ h1.title{font-size:23px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em}
 /* ---------- diagram viewer ---------- */
 .viewer{position:relative;background:var(--paper);border-radius:12px;overflow:hidden;
   box-shadow:0 12px 34px rgba(0,0,0,.45);touch-action:none;user-select:none}
-.viewer .canvas{width:100%;height:min(74vh,860px);overflow:hidden;cursor:grab;position:relative}
+.viewer .canvas{width:100%;height:74vh;max-height:860px;overflow:hidden;cursor:grab;position:relative}
 .viewer .canvas.drag{cursor:grabbing}
 .viewer .canvas > *{position:absolute;top:0;left:0;transform-origin:0 0;pointer-events:none;max-width:none}
 .vtools{position:absolute;right:10px;bottom:10px;display:flex;gap:5px;background:rgba(14,19,25,.9);
@@ -152,7 +152,8 @@ h1.title{font-size:23px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em}
 .backs .res{padding:10px 13px}
 
 /* ---------- lightbox ---------- */
-.lightbox{position:fixed;inset:0;z-index:80;background:rgba(6,9,13,.96);display:flex;flex-direction:column}
+.lightbox{position:fixed;top:0;right:0;bottom:0;left:0;z-index:80;background:rgba(6,9,13,.96);
+  display:flex;flex-direction:column}
 .lightbox[hidden]{display:none}
 .lb-bar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--line);
   font-size:13px;color:var(--dim)}
@@ -175,9 +176,26 @@ h1.title{font-size:23px;font-weight:700;margin:0 0 4px;letter-spacing:-.01em}
   .side{position:fixed;top:var(--hdr);bottom:0;left:0;z-index:35;
     transform:translateX(-102%);transition:transform .22s ease;box-shadow:0 0 40px rgba(0,0,0,.6)}
   body.nav-open .side{transform:none}
-  body.nav-open .side-scrim{display:block;position:fixed;inset:0;z-index:34;background:rgba(0,0,0,.5)}
+  body.nav-open .side-scrim{display:block;position:fixed;top:0;right:0;bottom:0;left:0;
+    z-index:34;background:rgba(0,0,0,.5)}
   .wrap{padding:16px 14px 80px}
   .paper{padding:18px 15px;border-radius:10px}
   .hero h1{font-size:24px}
+}
+@media (max-height:700px) and (min-width:700px){
+  :root{--hdr:48px}
+  .top{padding:0 8px}
+  .brand{gap:6px}
+  .brand-mark{font-size:10.5px;padding:3px 6px}
+  .brand-name{font-size:13px}
+  .brand-name em{display:none}
+  .books{margin-left:8px}
+  .books a{padding:6px 9px;font-size:12.5px}
+  .search input{height:36px;font-size:13px}
+  .wrap{padding-top:12px}
+  h1.title{font-size:19px}
+  .subtitle{font-size:12.5px;margin-bottom:12px}
+  .hero{padding:16px 0 6px}
+  .hero h1{font-size:23px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
