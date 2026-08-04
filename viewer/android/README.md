@@ -64,8 +64,10 @@ the contents of `site/` to the `FordManual` folder on the device.
 
 Targets Android 8.0+ (API 26) with `targetSdk 29`; this matches the Android
 version on the diagnostic tablets (XTool D7 class) the wrapper was written
-for. The HTTP server binds only to `127.0.0.1`, so it is not reachable through
-another device or network interface. Android 10 WebView 91 requires the app's
-base cleartext opt-in to load even this local HTTP origin; a domain-only
-exception for `127.0.0.1` or `localhost` does not work there. The cleartext
-opt-in is therefore app-wide, while the server remains loopback-only.
+for. The viewer stays within ES2019 syntax for Android 10 XTool D7 tablets
+whose WebView identifies as Chrome 74. The HTTP server binds only to
+`127.0.0.1`, so it is not reachable through another device or network
+interface. Android 10 WebView 91 requires the app's base cleartext opt-in to
+load even this local HTTP origin; a domain-only exception for `127.0.0.1` or
+`localhost` does not work there. The cleartext opt-in is therefore app-wide,
+while the server remains loopback-only.
