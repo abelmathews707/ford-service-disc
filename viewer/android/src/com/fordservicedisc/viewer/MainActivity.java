@@ -2,40 +2,36 @@
  * Copyright (c) 2026 Alexander Hill. SPDX-License-Identifier: MIT
  *
  * Offline wrapper for the ford-service-disc viewer. Loads the built static
- * site from /sdcard/FordManual in a WebView with no network access.
+ * site from /sdcard/FordManual in a WebView through a loopback-only server.
  *
  * The viewer is a fetch-based single-page app. Browsers block fetch() from
  * file:// pages, and current Android WebView ignores the legacy
  * "allow file access from file URLs" switches, so a plain file:// wrapper
  * would stall on the loading screen. This app instead serves the site from
- * a virtual http://127.0.0.1 origin: every request is intercepted and
- * answered by reading the matching file off local storage, so same-origin
- * fetch() works exactly as it does on a real server.
+ * a real HTTP server bound to 127.0.0.1, so same-origin fetch() works even on
+ * WebView versions that do not reliably call shouldInterceptRequest(). The
+ * app-level cleartext opt-in is required for this local URL on WebView 91;
+ * network isolation comes from the server's loopback-only socket binding.
  */
 package com.fordservicedisc.viewer;
 
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.webkit.WebResourceRequest;
-import android.webkit.WebResourceResponse;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 
 public class MainActivity extends Activity {
     private static final int REQ_STORAGE = 1;
-    private static final String ORIGIN = "http://127.0.0.1";
     private WebView web;
-    private File root;
+    private LoopbackHttpServer server;
     private boolean tried;
 
     @Override
@@ -50,12 +46,7 @@ public class MainActivity extends Activity {
         s.setUseWideViewPort(true);
         s.setBuiltInZoomControls(true);
         s.setDisplayZoomControls(false);
-        web.setWebViewClient(new WebViewClient() {
-            @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                return serve(request);
-            }
-        });
+        web.setWebViewClient(new WebViewClient());
         setContentView(web);
 
         if (Build.VERSION.SDK_INT >= 23
@@ -76,64 +67,42 @@ public class MainActivity extends Activity {
     private void load() {
         tried = true;
         for (String base : new String[]{"/sdcard/FordManual", "/storage/emulated/0/FordManual"}) {
-            if (new File(base, "index.html").exists()) {
-                root = new File(base);
-                web.loadUrl(ORIGIN + "/index.html");
-                return;
+            File root = new File(base);
+            if (new File(root, "index.html").isFile()) {
+                try {
+                    server = new LoopbackHttpServer(root);
+                    server.start();
+                    web.loadUrl(server.getBaseUrl() + "/index.html");
+                    return;
+                } catch (IOException e) {
+                    showError("Could not start the local manual server.");
+                    return;
+                }
             }
         }
-        Toast.makeText(this, "Manual not found. Copy the built site to /sdcard/FordManual first.",
-                Toast.LENGTH_LONG).show();
-        web.loadData("<h2>Ford Service Manual</h2>"
+        showError("Manual not found. Copy the built site to /sdcard/FordManual first.");
+    }
+
+    private void showError(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        web.loadData("<h2>Ford Service Manual</h2><p>" + message + "</p>"
                 + "<p>Build the site with <code>python3 -m fsd all DISC -o site</code>, "
                 + "copy the <code>site</code> directory to <b>/sdcard/FordManual</b> on "
                 + "this device, then reopen this app.</p>", "text/html", "utf-8");
     }
 
-    private WebResourceResponse serve(WebResourceRequest request) {
-        Uri uri = request.getUrl();
-        if (root == null || !ORIGIN.equals(uri.getScheme() + "://" + uri.getHost())) {
-            return null; // not ours; let the WebView handle it
+    @Override
+    protected void onDestroy() {
+        if (server != null) {
+            server.close();
+            server = null;
         }
-        String path = uri.getPath(); // query string already stripped
-        if (path == null || path.contains("..")) {
-            return error404();
+        if (web != null) {
+            web.stopLoading();
+            web.destroy();
+            web = null;
         }
-        File f = new File(root, path.startsWith("/") ? path.substring(1) : path);
-        if (!f.exists() || !f.isFile()) {
-            return error404();
-        }
-        try {
-            String mime = mimeOf(path);
-            String enc = (mime.startsWith("text/") || mime.contains("json")
-                    || mime.contains("javascript") || mime.contains("svg")) ? "utf-8" : null;
-            return new WebResourceResponse(mime, enc, new FileInputStream(f));
-        } catch (FileNotFoundException e) {
-            return error404();
-        }
-    }
-
-    private static WebResourceResponse error404() {
-        return new WebResourceResponse("text/plain", "utf-8", 404, "Not Found", null, null);
-    }
-
-    private static String mimeOf(String path) {
-        String ext = path.contains(".")
-                ? path.substring(path.lastIndexOf('.') + 1).toLowerCase() : "";
-        switch (ext) {
-            case "html": case "htm": return "text/html";
-            case "js": return "application/javascript";
-            case "css": return "text/css";
-            case "json": return "application/json";
-            case "jpg": case "jpeg": return "image/jpeg";
-            case "png": return "image/png";
-            case "gif": return "image/gif";
-            case "svg": return "image/svg+xml";
-            case "webp": return "image/webp";
-            case "pdf": return "application/pdf";
-            case "txt": return "text/plain";
-            default: return "application/octet-stream";
-        }
+        super.onDestroy();
     }
 
     @Override

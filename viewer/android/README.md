@@ -1,7 +1,7 @@
 # Offline Android wrapper
 
-A tiny WebView app (~200 lines) that shows a built manual site fully offline
-on an Android tablet or phone. No network, no server, no Gradle.
+A tiny WebView app that shows a built manual site fully offline on an Android
+tablet or phone. The bundled viewer makes no external requests. No Gradle.
 
 ## Why this exists
 
@@ -12,13 +12,22 @@ other local files. And current Android WebView ignores the legacy "allow
 file access from file URLs" switches, so a plain file:// wrapper just sits
 on the loading screen.
 
-This wrapper instead serves the site from a virtual `http://127.0.0.1`
-origin: every request is intercepted in the WebView and answered by reading
-the matching file from `/sdcard/FordManual/`. Same-origin `fetch()` then
-works exactly as it does on a real server, and nothing touches the network.
+This wrapper runs a real HTTP server on an ephemeral `127.0.0.1` port and
+serves files from `/sdcard/FordManual/`. Same-origin `fetch()` then works even
+on older WebViews that do not reliably intercept virtual-origin requests.
+The server cannot accept connections from another device or network interface.
 
-It contains no content. It is a ~17 KB shell around whatever you put in
+It contains no content. It is a small shell around whatever you put in
 `/sdcard/FordManual/`.
+
+## Test
+
+The loopback server has a pure-Java socket-level regression harness, so it can
+be tested without Android or an emulator:
+
+```sh
+./viewer/android/test.sh
+```
 
 ## Build
 
@@ -55,5 +64,10 @@ the contents of `site/` to the `FordManual` folder on the device.
 
 Targets Android 8.0+ (API 26) with `targetSdk 29`; this matches the Android
 version on the diagnostic tablets (XTool D7 class) the wrapper was written
-for. Cleartext HTTP is allowed only for `127.0.0.1`/localhost, and only to
-the local file service — no other traffic is permitted.
+for. The viewer stays within ES2019 syntax for Android 10 XTool D7 tablets
+whose WebView identifies as Chrome 74. The HTTP server binds only to
+`127.0.0.1`, so it is not reachable through another device or network
+interface. Android 10 WebView 91 requires the app's base cleartext opt-in to
+load even this local HTTP origin; a domain-only exception for `127.0.0.1` or
+`localhost` does not work there. The cleartext opt-in is therefore app-wide,
+while the server remains loopback-only.
