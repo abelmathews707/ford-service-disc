@@ -2,11 +2,10 @@
 <!-- Copyright (c) 2026 Alexander Hill. SPDX-License-Identifier: MIT -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.fordservicedisc.viewer"
-    android:versionCode="2"
-    android:versionName="1.1">
+    android:versionCode="3"
+    android:versionName="1.2">
 
-    <!-- The wrapper serves the site from http://127.0.0.1; requests are
-         answered by shouldInterceptRequest, so no real network is used. -->
+    <!-- The wrapper runs an HTTP server bound only to 127.0.0.1. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Needed to read the manual from /sdcard/FordManual on Android 10/11. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />

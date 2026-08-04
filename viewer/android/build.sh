@@ -23,6 +23,13 @@ set -eu
 cd "$(dirname "$0")"
 
 OUT=build
+KEYSTORE=debug.keystore
+
+# Keep the signing identity outside $OUT, which is recreated on every build.
+# Migrate the key produced by older versions of this script if it is present.
+if [ ! -f "$KEYSTORE" ] && [ -f "$OUT/debug.keystore" ]; then
+  mv "$OUT/debug.keystore" "$KEYSTORE"
+fi
 rm -rf "$OUT"
 mkdir -p "$OUT/classes"
 
@@ -64,7 +71,8 @@ echo "aapt2 compile/link..."
 
 echo "javac..."
 javac --release 8 -classpath "$PLATFORM" -d "$OUT/classes" \
-  src/com/fordservicedisc/viewer/MainActivity.java
+  src/com/fordservicedisc/viewer/MainActivity.java \
+  src/com/fordservicedisc/viewer/LoopbackHttpServer.java
 
 echo "dx (dex)..."
 "$DX" --dex --output="$OUT/classes.dex" "$OUT/classes"
@@ -73,13 +81,13 @@ echo "package + align + sign..."
 (cd "$OUT" && zip -qj base.apk classes.dex)
 "$ZIPALIGN" -f 4 "$OUT/base.apk" "$OUT/aligned.apk"
 
-if [ ! -f "$OUT/debug.keystore" ]; then
-  keytool -genkeypair -keystore "$OUT/debug.keystore" -alias debug \
+if [ ! -f "$KEYSTORE" ]; then
+  keytool -genkeypair -keystore "$KEYSTORE" -alias debug \
     -keyalg RSA -keysize 2048 -validity 10000 \
     -storepass android -keypass android \
     -dname "CN=ford-service-disc debug" >/dev/null 2>&1
 fi
-"$APKSIGNER" sign --ks "$OUT/debug.keystore" --ks-pass pass:android \
+"$APKSIGNER" sign --ks "$KEYSTORE" --ks-pass pass:android \
   --key-pass pass:android --out "$OUT/FordManual.apk" "$OUT/aligned.apk"
 
 echo

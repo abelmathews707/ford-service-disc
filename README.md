@@ -162,14 +162,15 @@ Caddy, nginx or Apache for anything permanent.
 
 ## Offline on a tablet
 
-The built site is static and the viewer talks to no network, so it runs fully
-offline on a phone or tablet. If the device can't serve HTTP itself — a
-diagnostic tablet in the garage, for instance — there is a tiny WebView
-wrapper in [`viewer/android/`](viewer/android/): it points the device's
-WebView at a local copy of the site and switches on the file access the
-fetch-based viewer needs. No Gradle, no content included. Build it with the
-Android SDK command-line tools, copy the built site to
-`/sdcard/FordManual/`, install the APK, done.
+The built site is static, so it runs fully offline on a phone or tablet. For a
+diagnostic tablet in the garage, there is a tiny WebView wrapper in
+[`viewer/android/`](viewer/android/): it serves the local copy through an HTTP
+server bound only to the device's loopback interface, which gives the
+fetch-based viewer a real same-origin URL without exposing it to the network.
+Android 10 WebView requires the wrapper's app-level cleartext opt-in even for
+that local origin; the server socket itself remains loopback-only. No Gradle,
+no content included. Build it with the Android SDK command-line tools, copy
+the built site to `/sdcard/FordManual/`, install the APK, done.
 
 ## Compatibility
 
