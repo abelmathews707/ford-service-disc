@@ -32,10 +32,10 @@ that. It reads the content directly off the disc and gives you a static
 website — no installer, no VM, no date checks, no DVD drive needed once you
 have an image.
 
-The content is stored in two undocumented Ford formats, a container called
-**"BAY POD"** and an LZ77 variant called **IDICOMP**. Neither was documented
-anywhere before this project; both are now specified in
-[docs/FORMAT.md](docs/FORMAT.md).
+The content is stored in two undocumented Ford formats: a POD archive
+container with **`BAY POD`** or **`POD BAY`** magic, and an LZ77 variant called
+**IDICOMP**. Neither was documented anywhere before this project; both are now
+specified in [docs/FORMAT.md](docs/FORMAT.md).
 
 ## Quick start
 
@@ -177,6 +177,10 @@ the built site to `/sdcard/FordManual/`, install the APK, done.
 **Tested against one disc so far** — 2020 Mustang (`20SLB`), which carries a
 SERVICE, an EVTM and a PCED book.
 
+The archive reader also accepts the `POD BAY` version 1 variant reported on a
+February 2004 disc. Synthetic tests cover its table parsing and IDICOMP
+decompression, but that whole disc has not been validated with this tool.
+
 Nothing in the tool is specific to that title. It asks each archive's own
 manifest what book it is and derives every filename pattern from that, so
 other discs in the same product line should work. Ford sold these under the
@@ -195,8 +199,8 @@ viewer will skip them and tell you it did.
 ## How it works
 
 ```
-disc ──► BAY POD archive ──► IDICOMP decompression ──► files ──► static site
-         (fsd/arc.py)        (fsd/idicomp.py)                    (fsd/build.py)
+disc ──► POD archive ──► IDICOMP decompression ──► files ──► static site
+         (fsd/arc.py)   (fsd/idicomp.py)                    (fsd/build.py)
 ```
 
 `fsd/iso.py` reads ISO9660 directly out of an image, handling 2048, 2352 and
@@ -243,6 +247,6 @@ CC0 / public domain.
   internet connection, this one needs a disc.
 
 <sub>Keywords: Ford service manual DVD, Ford workshop manual CD, Ford service
-disc Windows 11, Ford .ARC file, BAY POD, IDICOMP, Technical Service
+disc Windows 11, Ford .ARC file, BAY POD, POD BAY, IDICOMP, Technical Service
 Publications, TSP, EVTM wiring diagram, PCED, volume has expired, extract Ford
 service CD, offline service manual, right to repair.</sub>

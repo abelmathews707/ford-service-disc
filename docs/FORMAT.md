@@ -1,13 +1,16 @@
-# Ford "BAY POD" and IDICOMP — format specification
+# Ford POD archives and IDICOMP — format specification
 
 Ford's Technical Service Publications discs store their content in two
-undocumented formats: an archive container whose magic bytes are `BAY POD`,
-and an LZ77 compression variant identified by the string `IDICOMP`.
+undocumented formats: a POD archive container whose known magic bytes are
+`BAY POD` and `POD BAY`, and an LZ77 compression variant identified by the
+string `IDICOMP`.
 
 Neither appears to have been documented publicly before. Everything below was
 worked out by inspecting a disc I own (2020 Mustang, volume `20SLB`) and is
 implemented in `fsd/arc.py` and `fsd/idicomp.py`. It decodes all 10,230 files
-on that disc with every integrity check passing.
+on that `BAY POD` version 2 disc with every integrity check passing. The
+`POD BAY` version 1 observations come from a separate user report, not a
+full-disc validation by this project.
 
 > **This document is dedicated to the public domain under
 > [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).**
@@ -35,12 +38,12 @@ sector, dropping sync, header and ECC. Sectors of 2448 bytes (with subchannel
 data) and MODE2/FORM1 (user data at offset 24) also occur. Detect the layout
 by looking for `\x01CD001` at sector 16 for each candidate stride.
 
-## 2. Archive container: `BAY POD`
+## 2. POD archive container
 
 ```
 offset  size    field
-0       7       "BAY POD"
-7       1       version (2 on every disc seen)
+0       7       "BAY POD" or "POD BAY"
+7       1       version (2 with BAY POD; 1 reported with POD BAY)
 8       1       reserved, 0
 9       4       u32   entry count
 13      4       u32   name-table size in bytes
@@ -48,6 +51,13 @@ offset  size    field
 ...     m       name table
 ...             entry payloads
 ```
+
+The two known seven-byte magics use the same header and entry-table layout.
+Readers should accept those two exact byte strings; similar strings are not
+known variants. For `POD BAY` version 1, issue #2 reports an example archive
+with nine entries whose IDICOMP streams all decoded. The implementation has a
+synthetic regression test for that layout, but no complete version 1 disc has
+been validated here.
 
 Each 16-byte entry, all little-endian:
 

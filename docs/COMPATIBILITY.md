@@ -18,6 +18,15 @@ of `fsd probe` is all that is needed.
 |---|---|---|---|
 | 2020 Mustang Service Information | `20SLB` | SLB (SERVICE), ELB (EVTM), VL2 (PCED) | Full — 10,230/10,230 entries decode; site builds with 0 broken references |
 
+## Reported archive compatibility
+
+Issue #2 reports that a February 2004, 2000–2004 Service Information disc uses
+`POD BAY` version 1 archives. The reported example, `R00S03.ARC`, has nine
+entries and all nine IDICOMP streams decoded successfully. The reader accepts
+that exact magic and has synthetic coverage for parsing and decompression.
+This is archive-level evidence only: the whole disc has not been run through
+`fsd probe` or built into a site with this project.
+
 ## Why other discs are likely to work
 
 The tool does not hardcode anything from the disc above:
@@ -46,8 +55,9 @@ same container is in use right across the range.
   extracts to files normally, but the viewer skips it and says so. If you hit
   one, please report the type — that is exactly the information needed to add
   support.
-- **Only `BAY POD` version 2 has been seen.** The version byte is read and
-  reported by `fsd probe`; a different value is worth an issue.
+- **Only `BAY POD` version 2 has full-disc validation.** `POD BAY` version 1
+  is supported from the archive-level evidence above and synthetic regression
+  tests, but still needs a complete `probe` and site build on a real disc.
 - **Non-English discs are untested.** Nothing should depend on language, but
   the encoding fallback assumes Windows-1252 where UTF-8 fails, which may be
   wrong for other locales.

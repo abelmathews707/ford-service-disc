@@ -131,7 +131,7 @@ class TestIdicomp(unittest.TestCase):
 
 
 # ------------------------------------------------------------------ archive
-def make_arc(files):
+def make_arc(files, magic=b'BAY POD', version=2):
     names, table, blobs = b'', b'', b''
     head = 17 + len(files) * 16
     nsize = sum(len(n) + 1 for n in files)
@@ -141,7 +141,7 @@ def make_arc(files):
                              data_at + len(blobs), len(body))
         names += name.encode() + b'\0'
         blobs += body
-    return (b'BAY POD' + bytes([2, 0]) + struct.pack('<II', len(files), nsize)
+    return (magic + bytes([version, 0]) + struct.pack('<II', len(files), nsize)
             + table + names + blobs)
 
 
@@ -150,24 +150,36 @@ class TestArchive(unittest.TestCase):
         import io
         self.files = {'ONE.HTM': payload(chunk([lit(b) for b in b'hello'])),
                       'TWO.epl': payload(stored=[b'<workunit/>'])}
-        self.f = io.BytesIO(make_arc(self.files))
+        self.f = io.BytesIO(make_arc(self.files, magic=b'BAY POD', version=2))
 
-    def test_parses_entries(self):
+    def test_bay_pod_v2_parses_entries(self):
         a = Archive(self.f)
         self.assertEqual(a.version, 2)
         self.assertEqual([e.name for e in a], ['ONE.HTM', 'TWO.epl'])
 
-    def test_reads_and_decompresses(self):
+    def test_bay_pod_v2_decompresses(self):
         a = Archive(self.f)
+        self.assertEqual(a.read(a.find('ONE.HTM')), b'hello')
+
+    def test_pod_bay_v1_parses_and_decompresses(self):
+        import io
+        f = io.BytesIO(make_arc(self.files, magic=b'POD BAY', version=1))
+        a = Archive(f)
+        self.assertEqual(a.version, 1)
+        self.assertEqual([e.name for e in a], ['ONE.HTM', 'TWO.epl'])
         self.assertEqual(a.read(a.find('ONE.HTM')), b'hello')
 
     def test_ext_counts(self):
         self.assertEqual(Archive(self.f).ext_counts(), {'htm': 1, 'epl': 1})
 
-    def test_rejects_foreign_file(self):
+    def test_rejects_foreign_and_near_miss_magic(self):
         import io
-        with self.assertRaises(ArcError):
-            Archive(io.BytesIO(b'PK\x03\x04' + b'\0' * 64))
+        for magic in (b'PK\x03\x04\0\0\0', b'POD BA?', b'BAY P0D'):
+            with self.subTest(magic=magic):
+                with self.assertRaisesRegex(
+                        ArcError, r'unsupported POD archive magic .*'
+                                  r"expected b'BAY POD' or b'POD BAY'"):
+                    Archive(io.BytesIO(make_arc(self.files, magic=magic)))
 
 
 # ---------------------------------------------------------------------- iso

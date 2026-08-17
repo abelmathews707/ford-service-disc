@@ -1,8 +1,8 @@
-"""Reader for Ford's "BAY POD" archive container (`CONTENT/<locale>/*.ARC`).
+"""Reader for Ford's POD archive containers (`CONTENT/<locale>/*.ARC`).
 
     offset  size   field
-    0       7      "BAY POD"
-    7       1      version (2 on every disc seen so far)
+    0       7      "BAY POD" (v2) or "POD BAY" (v1)
+    7       1      version
     8       1      reserved, 0
     9       4      u32  entry count
     13      4      u32  name-table size
@@ -16,6 +16,7 @@ import os
 import struct
 
 MAGIC = b'BAY POD'
+MAGICS = (MAGIC, b'POD BAY')
 HEADER = 17
 ENTRY = 16
 
@@ -45,9 +46,9 @@ class Archive:
         self.f = f
         self.name = name
         hdr = f.read(HEADER)
-        if hdr[:7] != MAGIC:
-            raise ArcError(f'{name}: not a BAY POD archive '
-                           f'(magic was {hdr[:7]!r})')
+        if hdr[:7] not in MAGICS:
+            raise ArcError(f'{name}: unsupported POD archive magic {hdr[:7]!r} '
+                           f'(expected {MAGICS[0]!r} or {MAGICS[1]!r})')
         self.version = hdr[7]
         count, nsize = struct.unpack('<II', hdr[9:17])
         table = f.read(count * ENTRY)
