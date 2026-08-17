@@ -131,7 +131,7 @@ class TestIdicomp(unittest.TestCase):
 
 
 # ------------------------------------------------------------------ archive
-def make_arc(files, magic=b'BAY POD', version=2):
+def make_arc(files):
     names, table, blobs = b'', b'', b''
     head = 17 + len(files) * 16
     nsize = sum(len(n) + 1 for n in files)
@@ -141,8 +141,38 @@ def make_arc(files, magic=b'BAY POD', version=2):
                              data_at + len(blobs), len(body))
         names += name.encode() + b'\0'
         blobs += body
-    return (magic + bytes([version, 0]) + struct.pack('<II', len(files), nsize)
+    return (b'BAY POD' + bytes([2, 0]) + struct.pack('<II', len(files), nsize)
             + table + names + blobs)
+
+
+def pack_v1_name(name):
+    symbols = []
+    for char in name:
+        if char.isdigit():
+            symbols.append(ord(char) - ord('0') + 1)
+        elif 'A' <= char <= 'Z':
+            symbols.append(ord(char) - ord('A') + 11)
+        elif char == '_':
+            symbols.append(37)
+        else:
+            raise ValueError(f'unencodable v1 name character: {char!r}')
+    if len(symbols) > 8:
+        raise ValueError('v1 names contain at most eight symbols')
+    bits = 0
+    for symbol in symbols + [0] * (8 - len(symbols)):
+        bits = (bits << 6) | symbol
+    return bits.to_bytes(6, 'big') + b'\x62\xc6'
+
+
+def make_v1_arc(files):
+    table, blobs = b'', b''
+    data_at = 13 + len(files) * 15
+    for name, body in files.items():
+        table += pack_v1_name(name)
+        table += struct.pack('<I', data_at + len(blobs))
+        table += b'\0\0\0'
+        blobs += body
+    return b'POD BAY\x01\x00' + struct.pack('<I', len(files)) + table + blobs
 
 
 class TestArchive(unittest.TestCase):
@@ -150,7 +180,7 @@ class TestArchive(unittest.TestCase):
         import io
         self.files = {'ONE.HTM': payload(chunk([lit(b) for b in b'hello'])),
                       'TWO.epl': payload(stored=[b'<workunit/>'])}
-        self.f = io.BytesIO(make_arc(self.files, magic=b'BAY POD', version=2))
+        self.f = io.BytesIO(make_arc(self.files))
 
     def test_bay_pod_v2_parses_entries(self):
         a = Archive(self.f)
@@ -163,11 +193,49 @@ class TestArchive(unittest.TestCase):
 
     def test_pod_bay_v1_parses_and_decompresses(self):
         import io
-        f = io.BytesIO(make_arc(self.files, magic=b'POD BAY', version=1))
+        files = {
+            'A0_ONE': payload(stored=[b'first']),
+            'T50T100A': payload(chunk([lit(b) for b in b'second'])),
+        }
+        f = io.BytesIO(make_v1_arc(files))
         a = Archive(f)
         self.assertEqual(a.version, 1)
-        self.assertEqual([e.name for e in a], ['ONE.HTM', 'TWO.epl'])
-        self.assertEqual(a.read(a.find('ONE.HTM')), b'hello')
+        self.assertEqual([e.name for e in a], ['A0_ONE', 'T50T100A'])
+        self.assertEqual(
+            [(e.offset, e.length) for e in a],
+            [(43, len(files['A0_ONE'])),
+             (43 + len(files['A0_ONE']), len(files['T50T100A']))],
+        )
+        self.assertEqual(a.read(a.find('A0_ONE')), b'first')
+        self.assertEqual(a.read(a.find('T50T100A')), b'second')
+
+    def test_pod_bay_v1_rejects_truncated_record_table(self):
+        import io
+        blob = (b'POD BAY\x01\x00' + struct.pack('<I', 1)
+                + pack_v1_name('ONE') + b'\0' * 6)
+        with self.assertRaisesRegex(ArcError, 'truncated v1 record table'):
+            Archive(io.BytesIO(blob))
+
+    def test_pod_bay_v1_rejects_impossible_payload_offsets(self):
+        import io
+        files = {
+            'ONE': payload(stored=[b'first']),
+            'TWO': payload(stored=[b'second']),
+        }
+        good = make_v1_arc(files)
+        table_end = 13 + len(files) * 15
+        cases = (
+            ('inside record table', ((0, table_end - 1),)),
+            ('past EOF', ((1, len(good) + 1),)),
+            ('descending', ((0, table_end + 1), (1, table_end))),
+        )
+        for label, changes in cases:
+            with self.subTest(label=label):
+                blob = bytearray(good)
+                for index, offset in changes:
+                    struct.pack_into('<I', blob, 13 + index * 15 + 8, offset)
+                with self.assertRaisesRegex(ArcError, 'invalid v1 payload'):
+                    Archive(io.BytesIO(blob))
 
     def test_ext_counts(self):
         self.assertEqual(Archive(self.f).ext_counts(), {'htm': 1, 'epl': 1})
@@ -179,7 +247,7 @@ class TestArchive(unittest.TestCase):
                 with self.assertRaisesRegex(
                         ArcError, r'unsupported POD archive magic .*'
                                   r"expected b'BAY POD' or b'POD BAY'"):
-                    Archive(io.BytesIO(make_arc(self.files, magic=magic)))
+                    Archive(io.BytesIO(magic + make_arc(self.files)[7:]))
 
 
 # ---------------------------------------------------------------------- iso

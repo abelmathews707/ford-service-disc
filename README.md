@@ -34,8 +34,8 @@ have an image.
 
 The content is stored in two undocumented Ford formats: a POD archive
 container with **`BAY POD`** or **`POD BAY`** magic, and an LZ77 variant called
-**IDICOMP**. Neither was documented anywhere before this project; both are now
-specified in [docs/FORMAT.md](docs/FORMAT.md).
+**IDICOMP**. The formats and the evidence behind each supported version are
+described in [docs/FORMAT.md](docs/FORMAT.md).
 
 ## Quick start
 
@@ -177,16 +177,19 @@ the built site to `/sdcard/FordManual/`, install the APK, done.
 **Tested against one disc so far** — 2020 Mustang (`20SLB`), which carries a
 SERVICE, an EVTM and a PCED book.
 
-The archive reader also accepts the `POD BAY` version 1 variant reported on a
-February 2004 disc. Synthetic tests cover its table parsing and IDICOMP
-decompression, but that whole disc has not been validated with this tool.
+The archive reader also implements the `POD BAY` version 1 layout documented
+by public MIT-licensed parsers. Synthetic tests cover its packed names,
+absolute offsets, derived payload lengths and IDICOMP decompression. A
+reporter's February 2004 disc confirms that the signature occurs in the wild,
+but that whole disc has not yet been rerun with the corrected parser.
 
-Nothing in the tool is specific to that title. It asks each archive's own
-manifest what book it is and derives every filename pattern from that, so
-other discs in the same product line should work. Ford sold these under the
-generic "Technical Service Publications" name for many years and many models,
-and the PCED volume alone covers 23 different vehicles, so the format almost
-certainly spans a large part of the range.
+On the fully validated `BAY POD` version 2 path, nothing in the tool is
+specific to that title. It asks each archive's own manifest what book it is
+and derives every filename pattern from that, so other version 2 discs in the
+same product line should work. Ford sold these under the generic "Technical
+Service Publications" name for many years and many models, and the PCED
+volume alone covers 23 different vehicles, so that format almost certainly
+spans a large part of the range.
 
 But "should work" is not "does work". **If you have a disc, please run
 `fsd probe` and [open an issue](../../issues/new?template=disc-report.yml) —
@@ -206,11 +209,11 @@ disc ──► POD archive ──► IDICOMP decompression ──► files ─�
 `fsd/iso.py` reads ISO9660 directly out of an image, handling 2048, 2352 and
 2448-byte sectors, so nothing needs mounting.
 
-Both Ford formats were reverse-engineered for this project. The write-up in
-[docs/FORMAT.md](docs/FORMAT.md) is the only specification that exists, and it
-is released into the public domain so anyone can write another implementation.
-The test suite synthesises its own archives and needs no Ford content, so it
-doubles as an executable spec:
+The `BAY POD` version 2 and IDICOMP write-up was reverse-engineered for this
+project; `POD BAY` version 1 support also draws on public MIT-licensed archive
+research. [docs/FORMAT.md](docs/FORMAT.md) distinguishes those evidence
+sources and is released into the public domain. The test suite synthesises its
+own archives and needs no Ford content, so it doubles as an executable spec:
 
 ```bash
 python3 -m unittest discover -s tests -v
