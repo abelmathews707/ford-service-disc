@@ -16,10 +16,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fsd import idicomp  # noqa: E402
 from fsd.arc import ArcError, Archive  # noqa: E402
 from fsd.build import brand_parts, clean_fragment, site_title, tokens  # noqa: E402
-from fsd.disc import Book, parse_epl  # noqa: E402
+from fsd.disc import Book, book_of, parse_epl  # noqa: E402
 from fsd.extract import safe_name  # noqa: E402
 from fsd.idicomp import LZError, unwrap  # noqa: E402
 from fsd.iso import IsoError, SectorSource  # noqa: E402
+from fsd.probe import report  # noqa: E402
 
 
 # --------------------------------------------------------------- LZ helpers
@@ -145,6 +146,58 @@ def make_arc(files):
             + table + names + blobs)
 
 
+def v1_symbols(stem, ext=(0, 0, 0)):
+    """Pack raw v1 filename symbols, including deliberately invalid ones."""
+    value = 0
+    for symbol in stem:
+        value = (value << 6) | symbol
+    ext_value = ext[0] * 38 * 38 + ext[1] * 38 + ext[2]
+    return value.to_bytes(6, 'big') + ext_value.to_bytes(2, 'big')
+
+
+def v1_symbol(char):
+    if '0' <= char <= '9':
+        return ord(char) - ord('0') + 1
+    if 'A' <= char <= 'Z':
+        return ord(char) - ord('A') + 11
+    if char == '_':
+        return 37
+    raise ValueError(f'unsupported v1 filename character {char!r}')
+
+
+def v1_name(name):
+    stem, dot, ext = name.upper().partition('.')
+    if len(stem) > 8 or len(ext) > 3 or (dot and not ext):
+        raise ValueError(f'not an 8.3 filename: {name!r}')
+    stem_symbols = [v1_symbol(c) for c in stem]
+    ext_symbols = [v1_symbol(c) for c in ext]
+    return v1_symbols(stem_symbols + [0] * (8 - len(stem_symbols)),
+                      tuple(ext_symbols + [0] * (3 - len(ext_symbols))))
+
+
+def make_v1_arc(files, marker=b'POD BAY\x01\x00'):
+    files = list(files)
+    data_offset = 13 + len(files) * 15
+    table, blobs = b'', b''
+    for name, body in files:
+        table += (v1_name(name) + struct.pack('<I', data_offset + len(blobs))
+                  + len(body).to_bytes(3, 'little'))
+        blobs += body
+    return marker + struct.pack('<I', len(files)) + table + blobs
+
+
+def patch_v1_record(archive, index, *, name=None, offset=None, length=None):
+    archive = bytearray(archive)
+    record = 13 + index * 15
+    if name is not None:
+        archive[record:record + 8] = name
+    if offset is not None:
+        struct.pack_into('<I', archive, record + 8, offset)
+    if length is not None:
+        archive[record + 12:record + 15] = length.to_bytes(3, 'little')
+    return bytes(archive)
+
+
 class TestArchive(unittest.TestCase):
     def setUp(self):
         import io
@@ -168,6 +221,134 @@ class TestArchive(unittest.TestCase):
         import io
         with self.assertRaises(ArcError):
             Archive(io.BytesIO(b'PK\x03\x04' + b'\0' * 64))
+
+
+class TestArchiveV1(unittest.TestCase):
+    def _open(self, blob):
+        import io
+        return Archive(io.BytesIO(blob))
+
+    def test_decodes_full_83_filename(self):
+        a = self._open(make_v1_arc([
+            ('A1_B2C3D.HTM', payload(stored=[b'page']))]))
+        self.assertEqual(a.version, 1)
+        self.assertEqual(a.entries[0].name, 'A1_B2C3D.HTM')
+
+    def test_uses_stored_lengths(self):
+        bodies = [payload(stored=[b'a' * 16384] * 4 + [b'end']),
+                  payload(stored=[b'longer'])]
+        a = self._open(make_v1_arc([
+            ('ONE.HTM', bodies[0]), ('TWO.GIF', bodies[1])]))
+        self.assertEqual([e.length for e in a], [len(b) for b in bodies])
+        self.assertEqual([a.raw(e) for e in a], bodies)
+
+    def test_reads_and_decompresses(self):
+        body = payload(chunk([lit(b) for b in b'v1 works']))
+        a = self._open(make_v1_arc([('PAGE.HTM', body)]))
+        self.assertEqual(a.read(a.find('page.htm')), b'v1 works')
+
+    def test_epl_manifest_is_discovered(self):
+        manifest = (b'<workunit><type>SERVICE</type><code>S1O</code>'
+                    b'<vehicles><vehicle><year>2001</year>'
+                    b'<name>F-250</name></vehicle></vehicles></workunit>')
+        a = self._open(make_v1_arc([
+            ('S1O.EPL', payload(stored=[manifest])),
+            ('INDEX.HTM', payload(stored=[b'<html/>']))]))
+        book = book_of(a)
+        self.assertEqual((book.code, book.role, book.years, book.models),
+                         ('S1O', 'wsm', ['2001'], ['F-250']))
+
+    def test_decodes_all_observed_extensions(self):
+        extensions = ('EPL', 'GIF', 'HTM', 'MDB', 'PDF', 'WCF')
+        files = [(f'FILE{i}.{ext}', payload(stored=[ext.encode()]))
+                 for i, ext in enumerate(extensions)]
+        a = self._open(make_v1_arc(files))
+        self.assertEqual([e.ext for e in a], [e.lower() for e in extensions])
+        self.assertEqual(a.ext_counts(), {e.lower(): 1 for e in extensions})
+
+    def test_requires_exact_marker(self):
+        markers = (b'POD BAY\x02\x00', b'POD BAY\x01\x01',
+                   b'POD BAY\x00\x00', b'BAY POD\x01\x00')
+        for marker in markers:
+            with self.subTest(marker=marker), self.assertRaises(ArcError):
+                self._open(make_v1_arc([], marker))
+
+    def test_rejects_truncated_headers_and_table(self):
+        cases = (b'POD BAY', b'POD BAY\x01\x00',
+                 b'POD BAY\x01\x00\x01\x00',
+                 b'POD BAY\x01\x00' + struct.pack('<I', 1) + b'\0' * 14)
+        for blob in cases:
+            with self.subTest(size=len(blob)), self.assertRaises(ArcError):
+                self._open(blob)
+
+    def test_rejects_invalid_empty_and_misplaced_padding_symbols(self):
+        valid_stem = [11] + [0] * 7
+        names = {
+            'invalid stem': v1_symbols([38] + [0] * 7),
+            'invalid extension': v1_symbols(valid_stem, (38, 0, 0)),
+            'empty stem': v1_symbols([0] * 8),
+            'stem after padding': v1_symbols([11, 0, 12] + [0] * 5),
+            'extension after padding': v1_symbols(valid_stem, (11, 0, 12)),
+        }
+        base = make_v1_arc([('A.HTM', payload(stored=[b'x']))])
+        for case, name in names.items():
+            with self.subTest(case=case), self.assertRaises(ArcError):
+                self._open(patch_v1_record(base, 0, name=name))
+
+    def test_rejects_duplicate_names(self):
+        body = payload(stored=[b'x'])
+        with self.assertRaises(ArcError):
+            self._open(make_v1_arc([('SAME.HTM', body), ('SAME.HTM', body)]))
+
+    def test_rejects_invalid_payload_bounds(self):
+        body = payload(stored=[b'payload'])
+        base = make_v1_arc([('ONE.HTM', body)])
+        cases = {
+            'zero offset': patch_v1_record(base, 0, offset=0),
+            'before table': patch_v1_record(base, 0, offset=27),
+            'past eof': patch_v1_record(base, 0, offset=len(base) + 1),
+            'zero length': patch_v1_record(base, 0, length=0),
+            'length past eof': patch_v1_record(base, 0, length=len(body) + 1),
+        }
+        for case, blob in cases.items():
+            with self.subTest(case=case), self.assertRaises(ArcError):
+                self._open(blob)
+
+    def test_rejects_payload_gaps_and_overlaps(self):
+        bodies = [payload(stored=[b'first']), payload(stored=[b'second'])]
+        base = make_v1_arc([('ONE.HTM', bodies[0]), ('TWO.HTM', bodies[1])])
+        cases = {
+            'gap': patch_v1_record(base, 0, length=len(bodies[0]) - 1),
+            'overlap': patch_v1_record(base, 0, length=len(bodies[0]) + 1),
+        }
+        for case, blob in cases.items():
+            with self.subTest(case=case), self.assertRaises(ArcError):
+                self._open(blob)
+
+    def test_rejects_trailing_data(self):
+        blob = make_v1_arc([('ONE.HTM', payload(stored=[b'x']))])
+        with self.assertRaises(ArcError):
+            self._open(blob + b'unaccounted')
+
+
+class TestProbeReport(unittest.TestCase):
+    def _report(self, deep):
+        info = {
+            'label': 'TEST', 'source': 'directory', 'deep': deep,
+            'archives': [{
+                'code': 'ABC', 'size': 1, 'version': 1, 'entries': 2,
+                'extensions': {}, 'checked': 2, 'failed': 0,
+                'stored_uncompressed': 0,
+            }],
+            'warnings': [], 'ok': True,
+        }
+        lines = []
+        report(info, lines.append)
+        return '\n'.join(lines)
+
+    def test_distinguishes_sample_and_deep_results(self):
+        self.assertIn('decoded 2 sampled', self._report(False))
+        self.assertIn('decoded 2 entries (deep)', self._report(True))
 
 
 # ---------------------------------------------------------------------- iso

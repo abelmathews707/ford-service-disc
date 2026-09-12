@@ -1,6 +1,6 @@
-# `POD BAY` version 1 research
+# `POD BAY` version 1 format specification
 
-Status: reader implemented; synthetic tests and full CLI validation pending.
+Status: production reader and validation complete at archive level.
 
 This document records container metadata only. It contains no Ford manual
 content or extracted files.
@@ -78,14 +78,21 @@ their encoded filenames should still be preserved.
 
 ## Payload compatibility
 
-Every record offset points to an `\x01IDICOMP\x01` entry. The existing strict
-IDICOMP decoder successfully consumed sampled entries of every observed type
-without trailing bytes. An independent full pass decoded all 26,162 entries
-the same way. All six decoded `EPL` manifests parse with the existing manifest
-parser.
+Every record offset points to an `\x01IDICOMP\x01` entry. The production reader
+and existing strict IDICOMP decoder consumed all 26,162 entries without
+trailing bytes. All six decoded `EPL` manifests parse with the existing
+manifest parser. The complete 58-test suite also passes, including synthetic
+valid and malformed version 1 archives and the unchanged version 2 fixtures.
 
-Production validation remains a separate checkpoint: the completed reader
-must perform its own full-source deep probe before support is considered done.
+An in-memory content audit also checked every decoded file using rules suited
+to its encoded extension: 20,469 GIF, 936 PDF, 4,742 HTM, 6 EPL, 3 MDB, and
+6 WCF files passed. Three `.HTM` files are stylesheet-like, three HTML files
+omit a terminal `</html>`, and three EVTM manifests require the parser's
+existing bare-ampersand repair. These source quirks do not invalidate archive
+decoding.
+
+This validation is deliberately archive-level. Extraction, a complete viewer
+site build, and a link audit for these version 1 books remain later work.
 
 ## Confidence and open questions
 

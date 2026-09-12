@@ -18,6 +18,21 @@ of `fsd probe` is all that is needed.
 |---|---|---|---|
 | 2020 Mustang Service Information | `20SLB` | SLB (SERVICE), ELB (EVTM), VL2 (PCED) | Full — 10,230/10,230 entries decode; site builds with 0 broken references |
 
+## Archive-format validation
+
+This is narrower than the end-to-end result above: it proves that archives can
+be parsed and decompressed, not that their extracted books have completed the
+viewer build and link-audit pipeline.
+
+| Layout | Owned archive set | Entries | Result |
+|---|---|---:|---|
+| `POD BAY` version 1 | E1O, E2O, EYO, S1O, S2O, SYO | 26,162 | All names, bounds, stored lengths, and payload continuity validate; every entry strictly decompresses and passes a format-appropriate structural check; all six manifests parse |
+
+The same six version 1 archives occur byte-for-byte in two preserved source
+copies and are counted once. Sample probes of additional owned `BAY POD`
+version 2 sources were clean. A separate deep probe found the known baseline
+decoder warning below.
+
 ## Why other discs are likely to work
 
 The tool does not hardcode anything from the disc above:
@@ -46,11 +61,16 @@ same container is in use right across the range.
   extracts to files normally, but the viewer skips it and says so. If you hit
   one, please report the type — that is exactly the information needed to add
   support.
-- **Only `BAY POD` version 2 has been seen.** The version byte is read and
-  reported by `fsd probe`; a different value is worth an issue.
-- **Non-English discs are untested.** Nothing should depend on language, but
-  the encoding fallback assumes Windows-1252 where UTF-8 fails, which may be
-  wrong for other locales.
+- **Only the exact observed markers are supported:** `POD BAY 01 00` and
+  `BAY POD 02 00`. Other marker or version combinations are rejected rather
+  than guessed; please report one if you find it.
+- **One older French-Canadian `BAY POD` version 2 archive has a known strict
+  decoder warning.** Entry `S2169A03.htm` in archive `S21` expands one chunk to
+  16,388 bytes instead of 16,384. The exact same archived payload fails on the
+  unchanged base revision, so this is not caused by version 1 support.
+- **Non-English end-to-end site builds are untested.** Nothing should depend on
+  language, but the encoding fallback assumes Windows-1252 where UTF-8 fails,
+  which may be wrong for other locales.
 - **Rock Ridge and Joliet are not read** from images. These discs use plain
   8.3 uppercase names, so this has not mattered; a disc relying on long
   filenames would need it.

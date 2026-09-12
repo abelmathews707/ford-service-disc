@@ -30,6 +30,7 @@ def probe(source, sample=SAMPLE, deep=False, seed=0):
         'label': source.label,
         'source': source.kind,
         'origin': source.origin,
+        'deep': deep,
         'archives': [],
         'warnings': [],
     }
@@ -96,8 +97,9 @@ def probe(source, sample=SAMPLE, deep=False, seed=0):
             info['stored_uncompressed'] = stored
             if errors:
                 info['errors'] = errors
+                scope = 'entries' if deep else 'sampled entries'
                 out['warnings'].append(
-                    f'{ref.code}: {failed}/{failed + checked} sampled entries '
+                    f'{ref.code}: {failed}/{failed + checked} {scope} '
                     f'failed to decode. This is the interesting case — please '
                     f'open an issue.')
         out['archives'].append(info)
@@ -135,7 +137,8 @@ def report(info, out=print):
             f'{a["entries"]:6d} entries  {desc}')
         exts = ', '.join(f'{k}:{v}' for k, v in list(a['extensions'].items())[:8])
         out(f'         {exts}')
-        line = f'         decoded {a["checked"]} sampled'
+        scope = 'entries (deep)' if info.get('deep') else 'sampled'
+        line = f'         decoded {a["checked"]} {scope}'
         if a['stored_uncompressed']:
             line += f' ({a["stored_uncompressed"]} stored uncompressed)'
         if a['failed']:
