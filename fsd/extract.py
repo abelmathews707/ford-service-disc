@@ -38,13 +38,13 @@ class Result:
         return s
 
 
-def extract(source, dest, only=None, validate=True, force=False,
+def extract(source, dest, only=None, archives=None, validate=True, force=False,
             log=print, on_file=None):
-    """Unpack `source` into `dest/<CODE>/`.
+    """Unpack `source` into `dest/<archive output directory>/`.
 
-    `only` limits extraction to a set of archive codes. `validate` turns on the
-    16 KB chunk check in the decoder, which is cheap and catches a misparse
-    immediately rather than leaving you with a subtly corrupt file.
+    `only` limits extraction to archive codes. `archives` selects exact,
+    source-relative archive identities. `validate` turns on the 16 KB chunk
+    check in the decoder, which is cheap and catches a misparse immediately.
     """
     res = Result()
     os.makedirs(dest, exist_ok=True)
@@ -53,9 +53,13 @@ def extract(source, dest, only=None, validate=True, force=False,
     with open(os.path.join(dest, DISC_JSON), 'w', encoding='utf-8') as fh:
         json.dump({'label': source.label, 'source': source.kind}, fh, indent=1)
     refs = source.archives()
-    if only:
-        want = {c.upper() for c in only}
-        refs = [r for r in refs if r.code in want]
+    if only or archives:
+        codes = {code.casefold() for code in only or ()}
+        identities = {identity.casefold() for identity in archives or ()}
+        refs = [
+            ref for ref in refs
+            if ref.code.casefold() in codes or ref.identity in identities
+        ]
     if not refs:
         raise ArcError('no .ARC archives found on this disc')
 
@@ -67,7 +71,7 @@ def extract(source, dest, only=None, validate=True, force=False,
                 res.books.append(book)
             label = book.describe() if book else ref.code
             log(f'  {label}: {len(arc)} entries')
-            outdir = os.path.join(dest, ref.code)
+            outdir = os.path.join(dest, ref.output_dir)
             os.makedirs(outdir, exist_ok=True)
 
             for e in arc:
