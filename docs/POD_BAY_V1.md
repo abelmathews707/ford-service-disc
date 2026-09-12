@@ -1,6 +1,6 @@
 # `POD BAY` version 1 research
 
-Status: format characterized from owned media; reader implementation pending.
+Status: reader implemented; synthetic tests and full CLI validation pending.
 
 This document records container metadata only. It contains no Ford manual
 content or extracted files.
@@ -112,9 +112,15 @@ future owned media can broaden compatibility with new evidence.
 | Length | 24-bit in record | 32-bit in record |
 | Payload | IDICOMP | IDICOMP |
 
-The shared `Entry`, raw/read operations, IDICOMP decoder, manifest parser,
-disc discovery, extraction, and viewer pipeline can be reused. Only container
-dispatch and record/name decoding need a distinct version 1 path.
+The implementation reuses `Entry`, raw/read operations, the IDICOMP decoder,
+manifest parser, disc discovery, extraction, and viewer pipeline. Container
+dispatch and record/name decoding use a distinct version 1 path.
+
+Until another valid archive demonstrates otherwise, the reader requires the
+observed record-order continuity: the first payload begins at the table end,
+each stored length reaches the next offset, and the final payload reaches EOF.
+This rejects gaps, descending offsets, overlaps, and unaccounted trailing data
+instead of guessing how to handle an unseen variation.
 
 ## Experimental branch findings
 
