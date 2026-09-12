@@ -160,3 +160,4 @@ should be copied wholesale.
 | Experimental `agent/pod-bay-v1` | `e0efc8fd724d276f2c8b47b1ac4c5d1dacb38f6b` |
 | `darrenadixonpi/pod-bay` reference | `92fdae477d91b61ef86d1aea5a50f458d93fca77` |
 | `John-MustangGT/ford-workshop-manual-tools` reference | `98516fb65ec79aaadb837e7c46876921dddaa081` |
+| Production version 1 reader | `2f9fdc25a6be640a022cb8a96b9aba8c7e9056be` |
