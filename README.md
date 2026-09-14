@@ -9,7 +9,7 @@ Works on macOS, Linux and Windows. Python 3.9+, no dependencies.
 **Ships no Ford content — bring your own disc.**
 
 ```bash
-git clone https://github.com/shad0wca7/ford-service-disc
+git clone https://github.com/abelmathews707/ford-service-disc
 cd ford-service-disc
 python3 -m fsd all /Volumes/20SLB -o site --serve
 ```
@@ -18,6 +18,24 @@ That reads the disc, unpacks it, builds the site and opens it on
 <http://localhost:8848>.
 
 ---
+
+## Release notes — initial fork version (2026-09-14)
+
+This fork builds on [shad0wca7/ford-service-disc](https://github.com/shad0wca7/ford-service-disc).
+It retains the existing BAY POD v2 reader, searchable static viewer,
+self-hosting setup, and Android offline/Chrome 74 compatibility fixes.
+
+- Added POD BAY v1 archive support, including full 8.3 filenames and
+  extensions, stored payload lengths, and strict structural validation.
+- Deep probe output now distinguishes a complete decode from a sampled check.
+- Documented the v1 layout and validation of six unique owned archives:
+  26,162 entries strictly decode and all six manifests parse.
+
+The v1 evidence covers archive reading and decompression. A complete v1
+viewer build and link audit remain unverified. See
+[compatibility and known limits](docs/COMPATIBILITY.md) for the supported
+scope and the pre-existing strict decoder warning on one older v2 archive.
+No Ford content is included.
 
 ## The problem this solves
 
