@@ -178,16 +178,43 @@ class _ExtentFile(io.RawIOBase):
 
 
 class ArchiveRef:
-    __slots__ = ('code', 'path', 'size', '_open')
+    __slots__ = ('code', 'identity', 'output_dir', 'path', 'size', '_open')
 
-    def __init__(self, code, path, size, opener):
-        self.code, self.path, self.size, self._open = code, path, size, opener
+    def __init__(self, code, identity, path, size, opener):
+        self.code = code
+        self.identity = _archive_identity(identity)
+        self.output_dir = code
+        self.path, self.size, self._open = path, size, opener
 
     def open(self):
-        return Archive(self._open(), self.code + '.ARC')
+        return Archive(self._open(), self.identity)
 
     def __repr__(self):
-        return f'<ArchiveRef {self.code} {self.size}B>'
+        return f'<ArchiveRef {self.code} {self.identity} {self.size}B>'
+
+
+def _archive_identity(path):
+    return path.replace('\\', '/').lstrip('/').casefold()
+
+
+def _with_output_dirs(refs):
+    """Assign stable output directories without merging same-code archives."""
+    by_code = {}
+    for ref in refs:
+        by_code.setdefault(ref.code.casefold(), []).append(ref)
+    for group in by_code.values():
+        if len(group) == 1:
+            continue
+        used = set()
+        for ref in group:
+            parent = ref.identity.rsplit('/', 1)[0].rsplit('/', 1)[-1].upper()
+            candidate = f'{ref.code}--{parent or "ARCHIVE"}'
+            if candidate.casefold() in used:
+                token = re.sub(r'[^A-Z0-9]+', '-', ref.identity.upper()).strip('-')
+                candidate = f'{ref.code}--{token}'
+            used.add(candidate.casefold())
+            ref.output_dir = candidate
+    return sorted(refs, key=lambda ref: (ref.code.casefold(), ref.identity))
 
 
 class Source:
@@ -238,10 +265,11 @@ class DirSource(Source):
                 if fn.lower().endswith('.arc'):
                     p = os.path.join(dirpath, fn)
                     found.append(ArchiveRef(
-                        os.path.splitext(fn)[0].upper(), p,
+                        os.path.splitext(fn)[0].upper(),
+                        os.path.relpath(p, self.root), p,
                         os.path.getsize(p),
                         lambda p=p: open(p, 'rb')))
-        return sorted(found, key=lambda r: r.code)
+        return _with_output_dirs(found)
 
 
 class ImageSource(Source):
@@ -281,9 +309,9 @@ class ImageSource(Source):
             if not e.is_dir and e.path.lower().endswith('.arc'):
                 code = os.path.basename(e.path).rsplit('.', 1)[0].upper()
                 out.append(ArchiveRef(
-                    code, e.path, e.size,
+                    code, e.path, e.path, e.size,
                     lambda e=e: _ExtentFile(self.src, e.lba, e.size)))
-        return sorted(out, key=lambda r: r.code)
+        return _with_output_dirs(out)
 
     def close(self):
         self.f.close()

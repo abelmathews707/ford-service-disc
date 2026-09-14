@@ -28,6 +28,8 @@ self-hosting setup, and Android offline/Chrome 74 compatibility fixes.
 - Added POD BAY v1 archive support, including full 8.3 filenames and
   extensions, stored payload lengths, and strict structural validation.
 - Deep probe output now distinguishes a complete decode from a sampled check.
+- Added exact archive selection with `--archive` and separate extraction
+  directories for same-code archives from different source folders.
 - Documented the v1 layout and validation of six unique owned archives:
   26,162 entries strictly decode and all six manifests parse.
 
@@ -121,6 +123,31 @@ python3 -m fsd all IMAGE.img -o site
 of one, or an image file (`.iso`, `.img`, `.bin`).
 
 Run `python3 -m fsd COMMAND --help` for the options.
+
+### Select an exact archive
+
+Some discs contain the same archive code in several language folders. Use
+`probe --json` to find each archive's `identity` and `output_dir`, then copy
+the desired identity into `--archive`:
+
+```bash
+python3 -m fsd probe /path/to/disc --json
+python3 -m fsd extract /path/to/disc -o extracted --archive content/useni4/v22.arc
+python3 -m fsd all /path/to/disc -o site --archive content/useni4/v22.arc
+```
+
+The path above is an example; use an identity present on your disc. Identities
+are case-insensitive, source-relative paths with forward slashes. Repeat
+`--archive` to select multiple archives. `--book V22` selects every archive
+with that code; combining `--book` and `--archive` includes matches from
+either option.
+
+Unique codes still extract to `<CODE>/`. Duplicate codes use distinct
+directories, such as `V22--USENI4/` and `V22--CNFRI4/`, so their files stay
+separate. Start with a fresh extraction directory when upgrading from an
+older version that may have combined duplicate codes. The viewer currently
+uses only one book per role (SERVICE, EVTM, or PCED); select the desired
+archives before building when your disc contains several books of one role.
 
 ## What you get
 

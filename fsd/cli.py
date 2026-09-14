@@ -38,8 +38,8 @@ def cmd_probe(a):
 def cmd_extract(a):
     with open_source(a.disc) as src:
         print(f'Reading {src.label} ({src.kind})')
-        res = do_extract(src, a.out, only=a.book, validate=not a.no_validate,
-                         force=a.force)
+        res = do_extract(src, a.out, only=a.book, archives=a.archive,
+                         validate=not a.no_validate, force=a.force)
     print(f'\n{res.summary()}  ->  {a.out}')
     for arc, name, why in res.failed[:10]:
         print(f'  FAILED {arc}/{name}: {why}', file=sys.stderr)
@@ -113,7 +113,8 @@ def cmd_all(a):
     try:
         with open_source(a.disc) as src:
             print(f'Reading {src.label} ({src.kind})')
-            res = do_extract(src, dest, only=a.book, validate=not a.no_validate)
+            res = do_extract(src, dest, only=a.book, archives=a.archive,
+                             validate=not a.no_validate)
         print(f'  {res.summary()}\n')
         if res.failed:
             for arc, name, why in res.failed[:10]:
@@ -158,6 +159,8 @@ def make_parser():
     q.add_argument('-o', '--out', default='extracted', help='(default: extracted)')
     q.add_argument('-b', '--book', action='append',
                    help='only this archive code, e.g. -b SLB (repeatable)')
+    q.add_argument('--archive', action='append',
+                   help='only this exact source-relative archive path')
     q.add_argument('--force', action='store_true', help='re-extract existing files')
     q.add_argument('--no-validate', action='store_true',
                    help='skip the 16 KB chunk check')
@@ -176,6 +179,7 @@ def make_parser():
                                        '(default: a temporary folder)')
     q.add_argument('--keep-extracted', action='store_true')
     q.add_argument('-b', '--book', action='append')
+    q.add_argument('--archive', action='append')
     q.add_argument('--title')
     q.add_argument('--no-validate', action='store_true')
     q.add_argument('--serve', action='store_true', help='serve the site when done')

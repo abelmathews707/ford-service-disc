@@ -9,6 +9,7 @@ specification of the two container formats.
 import os
 import struct
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -16,8 +17,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from fsd import idicomp  # noqa: E402
 from fsd.arc import ArcError, Archive  # noqa: E402
 from fsd.build import brand_parts, clean_fragment, site_title, tokens  # noqa: E402
-from fsd.disc import Book, book_of, parse_epl  # noqa: E402
-from fsd.extract import safe_name  # noqa: E402
+from fsd.disc import Book, DirSource, book_of, parse_epl  # noqa: E402
+from fsd.extract import extract, safe_name  # noqa: E402
 from fsd.idicomp import LZError, unwrap  # noqa: E402
 from fsd.iso import IsoError, SectorSource  # noqa: E402
 from fsd.probe import report  # noqa: E402
@@ -329,6 +330,45 @@ class TestArchiveV1(unittest.TestCase):
         blob = make_v1_arc([('ONE.HTM', payload(stored=[b'x']))])
         with self.assertRaises(ArcError):
             self._open(blob + b'unaccounted')
+
+
+class TestDuplicateArchiveIdentity(unittest.TestCase):
+    def _archive(self, language, page):
+        manifest = (
+            '<workunit><code>V22</code><type>PCED</type>'
+            f'<title>{language}</title></workunit>'
+        ).encode()
+        return make_arc({
+            'V22.EPL': payload(stored=[manifest]),
+            page: payload(stored=[language.encode()]),
+        })
+
+    def test_exact_identity_keeps_same_code_archives_separate(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = os.path.join(temporary_directory, 'disc')
+            english = os.path.join(root, 'content', 'useni4')
+            french = os.path.join(root, 'content', 'cnfri4')
+            os.makedirs(english)
+            os.makedirs(french)
+            with open(os.path.join(english, 'V22.arc'), 'wb') as file:
+                file.write(self._archive('English', 'EN.HTM'))
+            with open(os.path.join(french, 'V22.arc'), 'wb') as file:
+                file.write(self._archive('French', 'FR.HTM'))
+
+            source = DirSource(root)
+            refs = source.archives()
+            self.assertEqual(
+                [ref.identity for ref in refs],
+                ['content/cnfri4/v22.arc', 'content/useni4/v22.arc'],
+            )
+            self.assertEqual(
+                [ref.output_dir for ref in refs], ['V22--CNFRI4', 'V22--USENI4']
+            )
+
+            output = os.path.join(temporary_directory, 'output')
+            extract(source, output, archives=['content/useni4/v22.arc'], log=lambda _: None)
+            self.assertTrue(os.path.exists(os.path.join(output, 'V22--USENI4', 'EN.HTM')))
+            self.assertFalse(os.path.exists(os.path.join(output, 'V22--CNFRI4')))
 
 
 class TestProbeReport(unittest.TestCase):

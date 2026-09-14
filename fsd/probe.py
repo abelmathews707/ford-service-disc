@@ -45,7 +45,13 @@ def probe(source, sample=SAMPLE, deep=False, seed=0):
             'CONTENT/ folder, please open an issue with its file listing.')
 
     for ref in refs:
-        info = {'code': ref.code, 'path': ref.path, 'size': ref.size}
+        info = {
+            'code': ref.code,
+            'identity': ref.identity,
+            'output_dir': ref.output_dir,
+            'path': ref.path,
+            'size': ref.size,
+        }
         try:
             arc = ref.open()
         except ArcError as ex:
