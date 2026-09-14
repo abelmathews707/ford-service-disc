@@ -19,11 +19,16 @@ That reads the disc, unpacks it, builds the site and opens it on
 
 ---
 
-## Release notes — initial fork version (2026-09-14)
+## Release notes — 0.1.0 Foundation (2026-09-14)
 
 This fork builds on [shad0wca7/ford-service-disc](https://github.com/shad0wca7/ford-service-disc).
 It retains the existing BAY POD v2 reader, searchable static viewer,
 self-hosting setup, and Android offline/Chrome 74 compatibility fixes.
+
+`v0.1.0` marks this fork's first consolidated foundation. Fork versioning starts
+at 0.1.0 independently of the upstream 1.0.0 baseline. This checkpoint pairs
+with [Repair Buddy 0.1.0](https://github.com/abelmathews707/repair-buddy/releases/tag/v0.1.0).
+Future work builds on these tagged versions; `main` may continue to advance.
 
 - Added POD BAY v1 archive support, including full 8.3 filenames and
   extensions, stored payload lengths, and strict structural validation.
