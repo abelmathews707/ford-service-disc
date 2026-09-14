@@ -1,13 +1,15 @@
-# Ford "BAY POD" and IDICOMP — format specification
+# Ford POD archive layouts and IDICOMP — format specification
 
 Ford's Technical Service Publications discs store their content in two
-undocumented formats: an archive container whose magic bytes are `BAY POD`,
-and an LZ77 compression variant identified by the string `IDICOMP`.
+undocumented formats: a POD archive container and an LZ77 compression variant
+identified by the string `IDICOMP`. Two container layouts have been observed:
+`POD BAY` version 1 and `BAY POD` version 2.
 
-Neither appears to have been documented publicly before. Everything below was
-worked out by inspecting a disc I own (2020 Mustang, volume `20SLB`) and is
-implemented in `fsd/arc.py` and `fsd/idicomp.py`. It decodes all 10,230 files
-on that disc with every integrity check passing.
+Neither appears to have been documented publicly before. The version 2 and
+IDICOMP details below were worked out by inspecting a disc I own (2020 Mustang,
+volume `20SLB`) and are implemented in `fsd/arc.py` and `fsd/idicomp.py`. The
+distinct version 1 record layout is specified in
+[`POD_BAY_V1.md`](POD_BAY_V1.md).
 
 > **This document is dedicated to the public domain under
 > [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).**
@@ -35,12 +37,12 @@ sector, dropping sync, header and ECC. Sectors of 2448 bytes (with subchannel
 data) and MODE2/FORM1 (user data at offset 24) also occur. Detect the layout
 by looking for `\x01CD001` at sector 16 for each candidate stride.
 
-## 2. Archive container: `BAY POD`
+## 2. Archive container: `BAY POD` version 2
 
 ```
 offset  size    field
 0       7       "BAY POD"
-7       1       version (2 on every disc seen)
+7       1       version (2 in the observed `BAY POD` layout)
 8       1       reserved, 0
 9       4       u32   entry count
 13      4       u32   name-table size in bytes
@@ -206,7 +208,9 @@ before the start of the output (they can, into the zero prologue).
 
 ## 8. Validation
 
-The implementation here was checked against the whole disc:
+### `BAY POD` version 2
+
+The implementation was checked end to end against the whole `20SLB` disc:
 
 - 10,230 of 10,230 entries decode
 - every chunk expands to exactly 16384 bytes except the last in each entry
@@ -214,3 +218,24 @@ The implementation here was checked against the whole disc:
 - content-level checks: JPEG/GIF/PDF magic and end markers, SVG and XML
   well-formedness, HTML end tags, no stray NUL bytes
 - a random sample of decoded images re-encoded cleanly with an external tool
+
+### `POD BAY` version 1
+
+The production reader was checked at archive level against six unique owned
+archives: `E1O`, `E2O`, `EYO`, `S1O`, `S2O`, and `SYO`.
+
+- all 26,162 records have valid names, bounds, stored lengths, and continuous
+  payload ranges
+- all 26,162 payloads decode with strict IDICOMP consumption
+- all 20,469 GIF, 936 PDF, 4,742 HTM, 6 EPL, 3 MDB, and 6 WCF files pass
+  format-appropriate structural checks
+- all six `.EPL` manifests parse through the existing book metadata path
+- the 58-test suite covers both layouts and synthetic malformed version 1
+  headers, names, lengths, ranges, collisions, and trailing data
+
+The source contains three stylesheet-like files named `.HTM`, three HTML files
+without a terminal `</html>`, and three EVTM manifests requiring the existing
+bare-ampersand repair. These are recognized source quirks, not archive failures.
+
+This is archive-level validation. A complete version 1 extraction, site build,
+and link audit has not yet been performed.

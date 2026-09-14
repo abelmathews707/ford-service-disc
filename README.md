@@ -9,7 +9,7 @@ Works on macOS, Linux and Windows. Python 3.9+, no dependencies.
 **Ships no Ford content — bring your own disc.**
 
 ```bash
-git clone https://github.com/shad0wca7/ford-service-disc
+git clone https://github.com/abelmathews707/ford-service-disc
 cd ford-service-disc
 python3 -m fsd all /Volumes/20SLB -o site --serve
 ```
@@ -18,6 +18,24 @@ That reads the disc, unpacks it, builds the site and opens it on
 <http://localhost:8848>.
 
 ---
+
+## Release notes — initial fork version (2026-09-14)
+
+This fork builds on [shad0wca7/ford-service-disc](https://github.com/shad0wca7/ford-service-disc).
+It retains the existing BAY POD v2 reader, searchable static viewer,
+self-hosting setup, and Android offline/Chrome 74 compatibility fixes.
+
+- Added POD BAY v1 archive support, including full 8.3 filenames and
+  extensions, stored payload lengths, and strict structural validation.
+- Deep probe output now distinguishes a complete decode from a sampled check.
+- Documented the v1 layout and validation of six unique owned archives:
+  26,162 entries strictly decode and all six manifests parse.
+
+The v1 evidence covers archive reading and decompression. A complete v1
+viewer build and link audit remain unverified. See
+[compatibility and known limits](docs/COMPATIBILITY.md) for the supported
+scope and the pre-existing strict decoder warning on one older v2 archive.
+No Ford content is included.
 
 ## The problem this solves
 
@@ -32,10 +50,11 @@ that. It reads the content directly off the disc and gives you a static
 website — no installer, no VM, no date checks, no DVD drive needed once you
 have an image.
 
-The content is stored in two undocumented Ford formats, a container called
-**"BAY POD"** and an LZ77 variant called **IDICOMP**. Neither was documented
-anywhere before this project; both are now specified in
-[docs/FORMAT.md](docs/FORMAT.md).
+The content is stored in an undocumented Ford archive family with two observed
+container layouts—**"POD BAY" version 1** and **"BAY POD" version 2**—and an
+LZ77 variant called **IDICOMP**. They are specified in
+[docs/FORMAT.md](docs/FORMAT.md) and
+[docs/POD_BAY_V1.md](docs/POD_BAY_V1.md).
 
 ## Quick start
 
@@ -91,7 +110,7 @@ python3 -m fsd all IMAGE.img -o site
 
 | Command | What it does |
 |---|---|
-| `fsd probe DISC` | Identify a disc and check every part of it decodes. Start here. |
+| `fsd probe DISC` | Identify a disc and decode a sample from each archive. Start here. |
 | `fsd extract DISC -o extracted` | Unpack the archives to plain files and stop. |
 | `fsd build extracted -o site` | Build the website from unpacked files. |
 | `fsd all DISC -o site` | Extract and build in one step. |
@@ -174,8 +193,11 @@ the built site to `/sdcard/FordManual/`, install the APK, done.
 
 ## Compatibility
 
-**Tested against one disc so far** — 2020 Mustang (`20SLB`), which carries a
-SERVICE, an EVTM and a PCED book.
+**Confirmed end to end against one disc so far** — 2020 Mustang (`20SLB`),
+which carries a SERVICE, an EVTM and a PCED book. The archive reader and
+IDICOMP decoder have also been deep-validated against six unique `POD BAY`
+version 1 archives containing 26,162 entries; a complete version 1 site build
+has not yet been validated.
 
 Nothing in the tool is specific to that title. It asks each archive's own
 manifest what book it is and derives every filename pattern from that, so
@@ -195,18 +217,20 @@ viewer will skip them and tell you it did.
 ## How it works
 
 ```
-disc ──► BAY POD archive ──► IDICOMP decompression ──► files ──► static site
-         (fsd/arc.py)        (fsd/idicomp.py)                    (fsd/build.py)
+                  ┌─ POD BAY v1 ─┐
+disc ──► archive ─┤              ├─► IDICOMP ──► files ──► static site
+                  └─ BAY POD v2 ─┘
+                     (fsd/arc.py)    (fsd/idicomp.py) (fsd/build.py)
 ```
 
 `fsd/iso.py` reads ISO9660 directly out of an image, handling 2048, 2352 and
 2448-byte sectors, so nothing needs mounting.
 
-Both Ford formats were reverse-engineered for this project. The write-up in
-[docs/FORMAT.md](docs/FORMAT.md) is the only specification that exists, and it
-is released into the public domain so anyone can write another implementation.
-The test suite synthesises its own archives and needs no Ford content, so it
-doubles as an executable spec:
+The archive layouts and compression format were reverse-engineered for this
+project. The write-ups in [docs/FORMAT.md](docs/FORMAT.md) and
+[docs/POD_BAY_V1.md](docs/POD_BAY_V1.md) are released into the public domain so
+anyone can write another implementation. The test suite synthesises its own
+archives and needs no Ford content, so it doubles as an executable spec:
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -243,6 +267,6 @@ CC0 / public domain.
   internet connection, this one needs a disc.
 
 <sub>Keywords: Ford service manual DVD, Ford workshop manual CD, Ford service
-disc Windows 11, Ford .ARC file, BAY POD, IDICOMP, Technical Service
+disc Windows 11, Ford .ARC file, POD BAY, BAY POD, IDICOMP, Technical Service
 Publications, TSP, EVTM wiring diagram, PCED, volume has expired, extract Ford
 service CD, offline service manual, right to repair.</sub>
