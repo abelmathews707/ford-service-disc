@@ -1,4 +1,13 @@
-# ford-service-disc
+# service-manual-extractor
+
+Formerly `abelmathews707/ford-service-disc`. This fork is expanding toward
+multiple service-manual formats and vehicle makes. **Ford support is implemented;
+GM HTML export support is currently at the inspection/design stage.**
+
+Start the GM work from [the current handoff](docs/CURRENT_HANDOFF.md), then use
+the [staged implementation plan](docs/GM_HTML_PLAN.md) and
+[test plan](docs/GM_HTML_TEST_PLAN.md). The existing `python -m fsd` commands
+remain compatible. Existing local checkouts do not need to be renamed.
 
 **Read your Ford service manual DVD without the original Windows software.**
 Extracts the workshop manual, wiring diagrams and PCED off a Ford Technical
@@ -9,8 +18,8 @@ Works on macOS, Linux and Windows. Python 3.9+, no dependencies.
 **Ships no Ford content — bring your own disc.**
 
 ```bash
-git clone https://github.com/abelmathews707/ford-service-disc
-cd ford-service-disc
+git clone https://github.com/abelmathews707/service-manual-extractor
+cd service-manual-extractor
 python3 -m fsd all /Volumes/20SLB -o site --serve
 ```
 

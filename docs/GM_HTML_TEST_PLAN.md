@@ -1,0 +1,104 @@
+# GM HTML support — test and acceptance plan
+
+Date: 2026-09-15
+Status: Planned tests; only the Step 0 checks recorded in the inspection and
+handoff have been run. Do not mistake this matrix for implemented coverage.
+
+## Two levels of evidence
+
+1. Committed synthetic tests: small authored HTML/SVG and generated ZIPs. They
+   run without the USB, proprietary content, credentials or a network.
+2. Local acceptance: original ZIP checksums, per-member integrity, extracted
+   paths/hashes, link audit, source comparisons and browser tasks. Store inputs,
+   outputs and detailed logs outside Git; commit only metadata summaries.
+
+## Gates by implementation step
+
+| Step | Cases | Required result |
+| --- | --- | --- |
+| 1: source integrity | Copy byte/hash match; every ZIP member's size and CRC; corrupt directory, damaged header/data, missing pages, re-copy/recovery provenance | Distinguish valid source, mismatched copy, damaged source and partial recovery; original hashes remain unchanged |
+| 2: contracts | Ford v1/v2 synthetic samples, duplicate archive codes and exact selection; old CLI JSON/exit behavior; neutral schema/version, IDs, unsupported format | Existing consumers remain compatible; unknown format cannot masquerade as Ford or complete HTML export |
+| 3: archive safety | Parent traversal, absolute/drive/UNC paths, separators, control characters, symlinks, nested output symlink, case/Unicode collisions, duplicate members, encryption, truncation, zip resource limits | Reject or explicitly quarantine before publication; no writes outside the selected fresh staging directory |
+| 3: repeatability | Nested duplicate basenames; empty files/dirs and OS metadata policy; same-sized changed file; interrupted extraction; re-run; ZIP vs folder | Preserve content paths; validate hashes; publish atomically; report counts/failures consistently |
+| 4: HTML roles | Root/index copies, large trees, folder anchors without href, missing body/encoding, empty headings, leaf pages, aliases | Search procedures without shell/navigation pollution; retain hierarchy and all original citation paths |
+| 4: context-aware aliases | Identical procedure text but different vehicle, engine, caption or table qualifiers | Preserve separate applicability context and source citations; deduplication cannot broaden a claim |
+| 4: relationships | Relative/escaped URLs, Windows separators, anchors, cross-document references, root escapes, absent about page, excluded other-car target | Resolve valid links and classify unavailable ones; never invent a target or fetch source API endpoints |
+| 4: content fidelity | Step/Action/Values/Yes/No tables, merged cells, warnings, prerequisite text, parent DTC, variant/caption qualifiers | Context survives normalization and evidence packing without confusing table branches or variant scope |
+| 4: diagrams | Preceding captions, multiple figures, PNG/JPEG/GIF/SVG, script/external-link SVG, missing asset, changed hash | Correct caption/asset pairing, explicit supported/unsupported state, checked safe rendering, no source script execution |
+| 5: application | Probe → choose publication → extract → normalize → search → citation → reader → diagram → return | Shared Ford/GM routes and interactions; IDs scoped to source; results belong to selected manuals |
+| 5: failure history | Invalid/partial manifest, failed transaction, reindex after changed source, stale citation, old Ford settings/records | Previous searchable generation survives failure; stale evidence is detectable; historical provenance is retained |
+| 5: partial sources | Readable HTML with missing images; missing HTML including navigation; explicitly permitted incomplete browsing | Distinct visible incomplete status and failure reasons; no complete-coverage claim or unqualified diagnostic use |
+| 6: applicability | 2001–2005 vs 2006, engine/fuel/cab/transmission/drivetrain unknowns, page disagrees with book, source-claimed equivalents | No silent universal applicability; mismatches visible/excluded as appropriate; qualifiers retained |
+| 7: static viewer | Both brands, multiple books, nested pages, search, backlinks, diagrams, keyboard/narrow screen, offline requests | Same viewer interactions; no Ford-only parser dependency for GM; all required assets local |
+| 8: checkpoint | Full regression gates, clean content boundary, dependency pin, setup from fresh clone | Reproducible build/tests; no manuals, ZIPs, local indexes, credentials or large derived outputs committed |
+
+Use tiny constructed adversarial archives; do not actually decompress an
+unbounded archive to test resource limits. Generate ZIPs during tests so a
+repository-level ZIP exclusion does not require real manual fixtures.
+
+## Initial local known-answer candidates
+
+Paths below are relative to the enclosing folder in each 6.6L or 8.1L ZIP.
+These are inspected examples, not an approval that they fit either vehicle.
+Confirm file integrity before accepting each one into the review set.
+
+| Source path | Expected observation |
+| --- | --- |
+| `index.html` | Selected 2006 GMC Sierra 2500 HD variant; source-claimed equivalents separate from verified coverage |
+| `pages/2.html` | Navigation tree; read failure in the verified source-matching 8.1L copy must be reported |
+| `pages/3.html` | Expanded navigation tree; roughly 24,000 anchor elements, including structural anchors without href |
+| `pages/100.html` | Labor content explicitly warns of Sierra 1500 4.3 X applicability |
+| `pages/1000.html` | Six SVG 6.0L CNG power-distribution figures; should not become diesel/8.1L advice |
+| `images/VA229217.svg` | Local vector diagram; validate supported rendering and original identity |
+| `pages/1066.html` | Short Circuit Description page needs its parent DTC B1017/B3970 context |
+| `pages/2412.html` | Oil-pressure-gauge diagnostic table, including conditional branches and engine-specific values |
+| `pages/3738.html`, `pages/6193.html` | Repeated diagnostic material under different navigation paths; retain aliases/citations |
+| `pages/10000.html` | Connector pictures and pin/wire/circuit/function table; match captions to all images |
+| `external-car.html` | Intentional omitted-content notice, not a procedure |
+| `about.html` references | Missing footer target distinguished from a missing diagnostic step |
+
+Once 6.0L integrity is settled, select an equivalent set from that archive and
+verify its actual selected year/engine. Do not borrow 6.6L expectations by filename.
+
+## Same-user-task acceptance checklist
+
+Run each action once for a reviewed Ford fixture and once for a reviewed GM
+fixture. Record source revision, expected path, actual result and pass/failure.
+Equal page counts or equal wording are not the acceptance criterion.
+
+1. Select a vehicle and inspect available manuals and unconfirmed qualifiers.
+2. Search a known DTC and a symptom; see useful section titles and context.
+3. Open a result, confirm its citation and complete procedure/table.
+4. Follow a reference and return to the same result/query/position.
+5. Open a diagram, read its caption, zoom it and return to its procedure.
+6. Encounter an inapplicable engine/page and correctly understand the mismatch.
+7. Encounter a missing/damaged reference and see what is unavailable.
+8. Repeat after reindexing; stale evidence is detected rather than relabeled.
+9. Repeat reader navigation using the keyboard and a narrow screen.
+
+## Commands and baseline
+
+Extractor, from `/Users/asokmathews/Documents/ford-service-disc`:
+
+```sh
+python3 -m unittest discover -s tests -v
+python3 -m fsd --version
+python3 -m fsd --help
+ruff check .
+```
+
+The 2026-09-15 baseline ran **59 tests successfully**, and `fsd --version` and
+`--help` succeeded at `f1bdc8d`. Ruff was not run for this documentation-only
+change. Existing CI covers Python 3.9/3.13 on Linux, macOS and Windows; retain
+that matrix for extraction and synthetic tests.
+
+For Repair Buddy integration, use that repository's configured environment and
+its current documented test command. Relevant existing tests cover source
+adapters/ingestion, normalization, references, safe HTML, retrieval, pilot
+pages and media. Run focused tests while implementing and the full suite before
+integration acceptance. Do not claim the old 210-test release result as a fresh
+result of this investigation.
+
+Pass reports must include the command, revision, input identity, scope, result
+and unresolved issues. A sampled visual inspection cannot substitute for a
+complete ZIP integrity scan, and a successful search does not prove diagnosis.
