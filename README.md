@@ -2,7 +2,8 @@
 
 Formerly `abelmathews707/ford-service-disc`. This fork is expanding toward
 multiple service-manual formats and vehicle makes. **Ford support is implemented;
-GM HTML export support is currently at the inspection/design stage.**
+GM HTML and PDF inputs have been inspected, but no GM importer is implemented
+yet.**
 
 Start the GM work from [the current handoff](docs/CURRENT_HANDOFF.md), then use
 the [staged implementation plan](docs/GM_HTML_PLAN.md) and

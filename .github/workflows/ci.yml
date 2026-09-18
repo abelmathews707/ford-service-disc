@@ -39,15 +39,15 @@ jobs:
       - run: ruff check .
 
   no-content:
-    # A standing guard: this repository must never gain Ford content.
+    # A standing guard: this repository must never gain manufacturer manual content.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fail if disc content was committed
+      - name: Fail if manual media was committed
         run: |
-          found=$(git ls-files | grep -Ei '\.(arc|epl|iso|img|enc|cab|hdr|inx)$' || true)
+          found=$(git ls-files | grep -Ei '\.(arc|epl|pdf|zip|iso|img|enc|cab|hdr|inx)$' || true)
           if [ -n "$found" ]; then
-            echo "::error::Ford disc content must not be committed:"
+            echo "::error::Manufacturer manual content must not be committed:"
             echo "$found"
             exit 1
           fi
@@ -57,4 +57,4 @@ jobs:
             echo "$big"
             exit 1
           fi
-          echo "Clean: no disc content in the repository."
+          echo "Clean: no manufacturer manual content in the repository."

@@ -1,6 +1,6 @@
-# GM HTML manuals and multi-format extractor plan
+# GM manual inputs and multi-format extractor plan
 
-Date: 2026-09-15
+Date: 2026-09-18
 Status: Inspection and design only. Implement one selected step per task.
 
 ## Outcome
@@ -23,8 +23,9 @@ and grounded-assistant milestones still apply to every make.
 
 ## Evidence that drives the design
 
-See [inspection findings](GM_HTML_INSPECTION.md) for integrity results and local
-paths. The supplied files are exports of a static website, not Ford archives.
+See [HTML USB inspection findings](GM_HTML_INSPECTION.md) and the separate
+[seller PDF inspection record](GM_PDF_SELLER_COLLECTION.md) for integrity
+results and local paths. Neither input is a Ford archive.
 
 - Three ZIP labels: GMC Sierra 2500 HD 6.0L, 6.6L, and 8.1L, allegedly 2001–2006.
 - Readable 6.6L and 8.1L index pages identify 2006 vehicles. Earlier-year coverage
@@ -37,6 +38,9 @@ paths. The supplied files are exports of a static website, not Ford archives.
   tables carry Step/Action/Values/Yes/No relationships that must survive import.
 - Archive integrity problems are a separate source issue. Extracting readable
   members does not establish a complete or trustworthy manual.
+- The seller PDF set is intact but is a patchwork of articles, not a complete
+  vehicle/year library. Its PDF source identities, page counts, title evidence
+  and native-text/OCR status must stay attached to every derived record.
 
 ## What to reuse and what to add
 
@@ -44,6 +48,7 @@ paths. The supplied files are exports of a static website, not Ford archives.
 | --- | --- | --- |
 | Ford extraction | `fsd/arc.py`, `disc.py`, `idicomp.py`, `iso.py`; existing CLI/probe contracts | A compatibility bridge to a neutral contract only when required |
 | HTML export extraction | Standard ZIP reading and the repository's synthetic-test approach | Format detection, directory-preserving extraction, manifests, integrity reporting |
+| PDF collections | Existing generic PDF/source ideas in Repair Buddy and local workshop-toolkit OCR flow | Collection manifest, file/page identities, native-text/OCR provenance and page citations |
 | Repair Buddy catalog/import | `sources/base.py`, `source_library.py`, ingestion staging and recorded dependency revisions | HTML export adapter and adapter dispatch in place of Ford-only import entry points |
 | Search and citations | Normalization, full-text index, content identities, citation checks | Navigation exclusion, hierarchy/context, aliases and applicability qualifiers |
 | Reader and diagrams | `references.py`, `safe_html.py`, existing reader, gallery and return navigation | GM caption association and checked SVG support |
@@ -56,8 +61,10 @@ files or pretend GM books are Ford `SERVICE`, `EVTM`, or `PCED` archives.
 ## Proposed format boundary
 
 Detect formats from their structure, not the car badge. The first additional
-format is provisionally `workshop_manuals_html_v1`, based on this observed export
-layout; it is not a promise that all GM publications use the same format.
+format is provisionally `workshop_manuals_html_v1`, based on the observed HTML
+export layout. A separate provisional `pdf_collection_v1` describes an
+identified folder/ZIP of PDFs with per-file and per-page evidence. Neither name
+is a promise that every GM or other-manufacturer publication uses that format.
 
 Keep `python -m fsd`, its JSON schema and exit behavior, `--book`/`--archive`,
 Repair Buddy's stored `ford_disc` IDs, and `[ford_disc].path` compatible.
@@ -74,6 +81,9 @@ The neutral manifest should be versioned and carry:
 - Document IDs scoped to their book, original relative paths and file hashes,
   title, breadcrumb hierarchy, content role, anchors and outgoing references.
 - Asset paths, MIME/type, hashes, captions and relationships to documents.
+- For PDF collections: original per-file hash, page count, title/first-page
+  evidence, page-level citations, and whether text is native or OCR-derived.
+  An OCR output must point to the untouched original and record its own hash.
 - Explicit applicability evidence and level (book, page, table, caption),
   conflicts, exclusions and unknowns. Keep engine/RPO strings as supplied.
 - Aliases for repeated procedure content, retaining every original citation.
@@ -115,9 +125,11 @@ against its source, then read every member and verify size and CRC. A rebuilt
 directory or partial recovery remains a derived artifact with a separate hash.
 Never splice files from another engine's archive based only on matching names.
 
-If originals remain damaged, record that limitation and use synthetic fixtures
-to develop Steps 2–5. Real-manual completion and release gates stay open. The
-user need not spend repeated agent runs rediscovering the same damage.
+If HTML originals remain damaged, record that limitation and use synthetic
+fixtures to develop Steps 2–5. The separately verified PDF set is usable for
+local acceptance candidates but does not fix the HTML inputs or establish its
+own complete vehicle coverage. Real-manual completion and release gates stay
+open. The user need not spend repeated agent runs rediscovering the same damage.
 
 Pass: source/copy integrity and per-member results are reproducible, with known
 coverage and any unrecoverable gaps explicitly resolved or blocked.
@@ -126,9 +138,10 @@ coverage and any unrecoverable gaps explicitly resolved or blocked.
 
 Define format detection, exact book selection, machine-readable probe/extract
 results, manifest schema, neutral command names, stable IDs, path handling and
-failure states. Add tiny authored examples resembling the observed structure:
+failure states. Add tiny authored HTML/SVG examples and generated PDF examples:
 an index, numeric page paths, duplicate navigation routes, a qualifier warning,
-a diagnostic table, raster/SVG diagrams and a missing-content placeholder.
+a diagnostic table, raster/SVG diagrams, native/OCR page provenance and a
+missing-content placeholder.
 Identical procedure text with different applicability qualifiers must retain
 its separate context and citations rather than being merged into one claim.
 
@@ -139,19 +152,21 @@ rewrite the original tagged `v0.1.0` release or silently update consumers.
 Pass: synthetic contracts and existing Ford tests pass; the output contract is
 documented enough for the Repair Buddy adapter to consume independently.
 
-### Step 3 — ZIP and extracted-folder reader
+### Step 3 — source containers and extracted-folder reader
 
 Add explicit format probing for ZIPs and already-unpacked roots. Preserve
 relative paths; detect unsafe names, symbolic links, case/Unicode collisions,
 encrypted/unsupported inputs, corrupt entries and resource-limit violations.
-Use staged output and hashes, and make interruption/re-run behavior explicit.
-Recovery must be a separate operation with a separate output/status.
+For PDF collections, record file hashes/counts/page counts and do not infer
+vehicle coverage from a folder name. Use staged output and hashes, and make
+interruption/re-run behavior explicit. Recovery must be a separate operation
+with a separate output/status.
 
 Pass: test cases in the test plan pass; a valid ZIP and its unpacked equivalent
 describe the same content, with distinct container provenance. No silent skips
 or successful completion status after unreadable required files.
 
-### Step 4 — HTML structure, context and assets
+### Step 4 — HTML structure, PDF pages, context and assets
 
 Use `.main`, page headings and breadcrumb hierarchy rather than indexing the
 entire website shell. Detect structural navigation, root/index duplicates,
@@ -170,12 +185,20 @@ Pass: selectors, hierarchy, aliases, tables, qualifiers, captions and SVG tests
 pass. Representative local source pages match the derived records visually and
 structurally. All unresolved links are classified.
 
+For PDF collections, retain the PDF as the canonical reader source. Extract
+page-based searchable text, title/applicability evidence and page assets without
+inventing a document hierarchy. Route native text and OCR-derived text through
+the same search contract while recording the provenance difference. A page-level
+citation must resolve to the correct original file and page.
+
 ### Step 5 — Repair Buddy integration
 
 Start a separate Repair Buddy feature branch from its then-current `main` and
-preserve existing local edits. Implement an HTML export adapter behind the
-application's existing source interfaces. Generalize Ford-wired import dispatch,
-failure checks and dependency provenance without changing existing Ford IDs.
+preserve existing local edits. Implement source adapters behind the application's
+existing source interfaces. Generalize Ford-wired import dispatch, failure
+checks and dependency provenance without changing existing Ford IDs. The first
+adapters may be HTML export and PDF collection; do not create separate
+manufacturer-specific application flows.
 Reuse ingestion staging, transactions and rollback behavior.
 
 Use the same vehicle selection, matching sections, citation route, reader,

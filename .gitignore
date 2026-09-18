@@ -8,6 +8,8 @@
 # Disc images
 *.zip
 *.ZIP
+*.pdf
+*.PDF
 *.iso
 *.img
 *.bin
