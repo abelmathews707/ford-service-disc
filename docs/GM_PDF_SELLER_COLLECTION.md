@@ -38,6 +38,8 @@ outside Repair Buddy's live database.
 | Native-text PDFs | 39 files; 7,606 pages |
 | Scanned/image-only PDFs | 74 files; 4,718 pages |
 | Title-page OCR | 74 of 74 scanned PDFs rendered and OCR-read successfully |
+| Full searchable copies | 74 of 74 scanned PDFs; 4,718 derived page-text files |
+| Searchable-copy validation | All 74 qpdf-clean, readable and page-count matched |
 | Structural check | 39 clean; 74 have qpdf stream warnings only; no fatal errors |
 
 The warnings are characteristic of the scanned PDFs and do not indicate a bad
@@ -53,6 +55,10 @@ Detailed local reports:
 - `analysis/pdf-inventory.json`
 - `analysis/pdf-analysis-summary.json`
 - `analysis/ocr-title-pages.json`
+- `analysis/toolkit-ocr-batch-summary.json`
+- `analysis/final-ocr-validation.json`
+- `analysis/GM_SELLER_COVERAGE_MATRIX.md`
+- `analysis/gm-manual-catalog.html`
 
 ## What the titles actually support
 
@@ -82,7 +88,8 @@ can differ.
 ## OCR and reader preparation
 
 The first title-page pass is saved under `analysis/ocr-title-pages/`. Full
-searchable copies must be derived separately from originals and retain:
+searchable copies were derived separately under `analysis/toolkit-searchable/`.
+They retain:
 
 - original source SHA-256 and relative path;
 - page count and original page number;
@@ -94,9 +101,15 @@ is the local readability tool: it isolates image-only pages, OCRs them and
 merges them back into a searchable PDF. Its default regular-PDF mode returns
 exit code 4 after generating readable output because of nonfatal qpdf stream
 warnings. A local compatibility runner retains the toolkit workflow but uses
-PDF/A for the OCR-only temporary PDF; two smoke samples produced qpdf-clean,
-searchable merged PDFs. The batch runner must still validate every generated
-PDF and extracted page text before accepting it.
+PDF/A for the OCR-only temporary PDF. The completed batch has 74 clean outputs:
+each has the original page count, final `qpdf --check` success and one derived
+text file per source page. A fresh SHA-256 pass confirmed that all 113 original
+PDFs still match the archive manifest after processing.
+
+Open `analysis/gm-manual-catalog.html` locally to filter all 113 records and
+click an original PDF or, for every scanned PDF, its derived searchable copy.
+The catalog and the coverage matrix are convenience views; the original PDFs
+remain the authoritative source for applicability.
 
 ## What this does and does not unlock
 

@@ -74,7 +74,8 @@ inputs; vendor manuals, PDFs, ZIPs and large derived output stay out of Git.
 
 - 113 PDFs / 12,324 pages match exactly between the supplied folder and ZIP.
 - 39 PDFs have native selectable text (7,606 pages); 74 scanned PDFs (4,718
-  pages) have title-page OCR evidence. All PDFs are readable and unencrypted.
+  pages) now have separately derived, validated searchable copies. All PDFs are
+  readable and unencrypted.
 - Source titles show a patchwork of 2000–03 GM truck/SUV articles, a 2004
   Silverado owner manual and a 2006 Silverado/Sierra article set. The folder
   labels do not prove all stated years or vehicle coverage.
@@ -90,6 +91,10 @@ inputs; vendor manuals, PDFs, ZIPs and large derived output stay out of Git.
 - Copied the seller PDF folder and ZIP; tested every ZIP member; extracted all
   113 members; compared their SHA-256 values to the supplied folder; inspected
   PDF metadata, text coverage, representative rendering and title-page OCR.
+- Used the independently versioned workshop toolkit through a local PDF/A
+  compatibility runner to make all 74 scanned PDFs searchable. Every output is
+  qpdf-clean, has the source page count and has per-page text; a final SHA-256
+  pass confirmed that all 113 originals remain unchanged.
 - Inspected source pages, scripts/styles, navigation, procedures, tables,
   diagrams and source warnings in the HTML set. This was not a full
   browser/diagnostic acceptance test.
@@ -109,9 +114,9 @@ both `workshop_manuals_html_v1` and provisional `pdf_collection_v1`. Preserve
 Ford CLI behavior and provenance. Do not build a GM parser, reader or Repair
 Buddy integration in that step.
 
-Full local OCR output should remain derived and separately validated. Retain
-per-page source identity and native-text/OCR provenance; generic qpdf warnings
-are review metadata, not automatic source rejection.
+The completed local OCR output remains derived, not source truth. Retain
+per-page source identity and native-text/OCR provenance; generic source qpdf
+warnings are review metadata, not automatic source rejection.
 
 Model recommendations are in the step table: Terra Medium for routine adapter
 work, Sol Medium/High for structure/integration, Luna Low for mechanical
